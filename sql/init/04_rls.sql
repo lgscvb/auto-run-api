@@ -63,8 +63,23 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO api_user, staff, admin;
 -- 3. 表格權限 - anon (匿名用戶)
 -- ============================================================================
 
--- anon 只能存取特定 Views (用於 LINE Bot 查詢)
+-- anon 可以讀取主要表格（供 PostgREST 匿名 API 使用）
+GRANT SELECT ON branches TO anon;
+GRANT SELECT ON customers TO anon;
+GRANT SELECT ON contracts TO anon;
+GRANT SELECT ON payments TO anon;
+GRANT SELECT ON commissions TO anon;
+GRANT SELECT ON accounting_firms TO anon;
+
+-- anon 可存取所有 Views
 GRANT SELECT ON v_line_user_lookup TO anon;
+GRANT SELECT ON v_customer_summary TO anon;
+GRANT SELECT ON v_payments_due TO anon;
+GRANT SELECT ON v_renewal_reminders TO anon;
+GRANT SELECT ON v_commission_tracker TO anon;
+GRANT SELECT ON v_branch_revenue_summary TO anon;
+GRANT SELECT ON v_overdue_details TO anon;
+GRANT SELECT ON v_today_tasks TO anon;
 
 -- ============================================================================
 -- 4. 表格權限 - api_user (認證 API 用戶)
