@@ -1,0 +1,125 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_DIR: /opt/hourjungle-crm
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd mcp-server
+          pip install -r requirements.txt
+
+      - name: Check syntax
+        run: |
+          cd mcp-server
+          python -m py_compile main.py
+          python -m py_compile tools/crm_tools.py
+          python -m py_compile tools/line_tools.py
+          python -m py_compile tools/report_tools.py
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.GCP_SSH_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.GCP_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to GCP
+        env:
+          GCP_USER: ${{ secrets.GCP_USER }}
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+        run: |
+          ssh $GCP_USER@$GCP_HOST << 'ENDSSH'
+            set -e
+
+            # Navigate to project directory
+            cd ${{ env.PROJECT_DIR }}
+
+            # Pull latest changes
+            echo "Pulling latest changes..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Build and restart services
+            echo "Building and restarting services..."
+            docker-compose pull
+            docker-compose build --no-cache mcp-server
+            docker-compose up -d
+
+            # Wait for services to be healthy
+            echo "Waiting for services to start..."
+            sleep 10
+
+            # Health check
+            echo "Running health checks..."
+            curl -sf http://localhost:8080/health || echo "MCP Server health check failed"
+            curl -sf http://localhost:3000/ || echo "PostgREST health check failed"
+
+            # Show status
+            echo "Current container status:"
+            docker-compose ps
+
+            # Show recent logs
+            echo "Recent logs:"
+            docker-compose logs --tail=20
+          ENDSSH
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "Deployment successful!"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Deployment failed!"
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+    needs: deploy
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.GCP_SSH_KEY }}
+
+      - name: Rollback
+        env:
+          GCP_USER: ${{ secrets.GCP_USER }}
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $GCP_USER@$GCP_HOST << 'ENDSSH'
+            cd ${{ env.PROJECT_DIR }}
+            echo "Rolling back to previous version..."
+            git reset --hard HEAD~1
+            docker-compose up -d
+            echo "Rollback complete"
+          ENDSSH

@@ -1,0 +1,21 @@
+# Web Framework
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+
+# Database
+psycopg2-binary==2.9.9
+httpx==0.26.0
+
+# LINE Bot SDK
+line-bot-sdk==3.5.1
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# JWT
+PyJWT==2.8.0
+
+# MCP Protocol
+mcp==1.0.0
