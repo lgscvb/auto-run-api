@@ -19,3 +19,6 @@ PyJWT>=2.8.0
 
 # MCP Protocol
 mcp>=1.0.0
+
+# AI - OpenRouter (OpenAI-compatible)
+openai>=1.0.0

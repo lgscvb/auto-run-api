@@ -4,11 +4,14 @@ FastAPI + MCP Protocol for AI Agent Integration
 """
 
 import os
+import json
 import logging
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from openai import OpenAI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
@@ -43,6 +46,9 @@ class Settings(BaseSettings):
     # LINE Bot
     line_channel_access_token: str = ""
     line_channel_secret: str = ""
+
+    # AI - OpenRouter API
+    openrouter_api_key: str = ""
 
     class Config:
         env_file = ".env"
@@ -137,6 +143,14 @@ from tools.report_tools import (
     get_revenue_summary,
     get_overdue_list,
     get_commission_due
+)
+
+from tools.renewal_tools import (
+    update_renewal_status,
+    update_invoice_status,
+    get_renewal_status_summary,
+    batch_update_renewal_status,
+    set_postgrest_request as set_renewal_postgrest
 )
 
 
@@ -272,6 +286,42 @@ MCP_TOOLS = {
             "status": {"type": "string", "description": "狀態 (pending/eligible/all)", "default": "eligible"}
         },
         "handler": get_commission_due
+    },
+
+    # 續約流程管理工具
+    "renewal_update_status": {
+        "description": "更新合約的續約狀態",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "合約ID", "required": True},
+            "renewal_status": {"type": "string", "description": "續約狀態 (notified/confirmed/paid/invoiced/signed/completed)", "required": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": update_renewal_status
+    },
+    "renewal_update_invoice_status": {
+        "description": "更新合約的發票狀態",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "合約ID", "required": True},
+            "invoice_status": {"type": "string", "description": "發票狀態 (pending_tax_id/issued_personal/issued_business)", "required": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": update_invoice_status
+    },
+    "renewal_get_summary": {
+        "description": "取得續約狀態統計",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "optional": True}
+        },
+        "handler": get_renewal_status_summary
+    },
+    "renewal_batch_update": {
+        "description": "批次更新多個合約的續約狀態",
+        "parameters": {
+            "contract_ids": {"type": "array", "description": "合約ID列表", "required": True},
+            "renewal_status": {"type": "string", "description": "續約狀態", "required": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": batch_update_renewal_status
     }
 }
 
@@ -284,6 +334,10 @@ MCP_TOOLS = {
 async def lifespan(app: FastAPI):
     """應用生命週期"""
     logger.info("MCP Server starting...")
+
+    # 設置續約工具的 postgrest_request
+    set_renewal_postgrest(postgrest_request)
+    logger.info("Renewal tools initialized")
 
     # 測試資料庫連接
     try:
@@ -516,6 +570,400 @@ async def api_today_tasks(branch_id: int = None):
         params["branch_id"] = f"eq.{branch_id}"
 
     return await postgrest_request("GET", "v_today_tasks", params=params)
+
+
+# ============================================================================
+# AI Chat Endpoint (內部 AI 助手) - 使用 OpenRouter
+# ============================================================================
+
+# 可用模型列表
+AVAILABLE_MODELS = {
+    "claude-sonnet-4.5": {
+        "id": "anthropic/claude-sonnet-4.5",
+        "name": "Claude Sonnet 4.5",
+        "description": "最新最強，適合複雜任務"
+    },
+    "claude-sonnet-4": {
+        "id": "anthropic/claude-sonnet-4",
+        "name": "Claude Sonnet 4",
+        "description": "平衡性能與成本"
+    },
+    "claude-3.5-sonnet": {
+        "id": "anthropic/claude-3.5-sonnet",
+        "name": "Claude 3.5 Sonnet",
+        "description": "快速經濟實惠"
+    },
+    "gpt-4o": {
+        "id": "openai/gpt-4o",
+        "name": "GPT-4o",
+        "description": "OpenAI 多模態模型"
+    },
+    "gemini-2.0-flash": {
+        "id": "google/gemini-2.0-flash-001",
+        "name": "Gemini 2.0 Flash",
+        "description": "Google 快速模型"
+    }
+}
+
+DEFAULT_MODEL = "claude-sonnet-4"
+
+
+def get_openrouter_client():
+    """取得 OpenRouter 客戶端"""
+    if not settings.openrouter_api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="OPENROUTER_API_KEY not configured"
+        )
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=settings.openrouter_api_key
+    )
+
+
+def convert_tools_for_openai():
+    """將 MCP_TOOLS 轉換為 OpenAI 格式"""
+    tools = []
+    for name, tool in MCP_TOOLS.items():
+        properties = {}
+        required = []
+
+        for param_name, param_info in tool["parameters"].items():
+            param_type = param_info["type"]
+            if param_type == "integer":
+                param_type = "integer"
+            elif param_type == "number":
+                param_type = "number"
+            elif param_type == "object":
+                param_type = "object"
+            else:
+                param_type = "string"
+
+            properties[param_name] = {
+                "type": param_type,
+                "description": param_info.get("description", "")
+            }
+
+            if param_info.get("required"):
+                required.append(param_name)
+
+        tools.append({
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": tool["description"],
+                "parameters": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required
+                }
+            }
+        })
+
+    return tools
+
+
+class ChatMessage(BaseModel):
+    """聊天訊息"""
+    role: str  # 'user' or 'assistant'
+    content: str
+
+
+class AIChatRequest(BaseModel):
+    """AI 聊天請求"""
+    messages: List[ChatMessage]
+    model: str = DEFAULT_MODEL
+    stream: bool = False
+
+
+class AIChatResponse(BaseModel):
+    """AI 聊天回應"""
+    success: bool
+    message: str
+    model_used: str = ""
+    tool_calls: List[dict] = []
+
+
+# 系統提示詞
+CRM_SYSTEM_PROMPT = """你是 Hour Jungle CRM 的智能助手，專門協助員工管理客戶、合約、繳費等事務。
+
+你的能力：
+1. 查詢客戶資料（姓名、電話、公司名、LINE 綁定狀態）
+2. 查詢應收款項、逾期款項
+3. 查詢即將到期的合約、需續約提醒
+4. 查詢營收報表、佣金報表
+5. 發送 LINE 訊息給客戶（繳費提醒、續約提醒）
+6. 建立新客戶、更新客戶資料、記錄繳費
+
+使用說明：
+- 當用戶詢問客戶資料時，使用 crm_search_customers 或 crm_get_customer_detail
+- 當用戶詢問逾期時，使用 report_overdue_list
+- 當用戶詢問到期合約時，使用 crm_list_renewals_due
+- 當用戶詢問營收時，使用 report_revenue_summary
+- 當用戶詢問待繳款項時，使用 crm_list_payments_due
+
+回覆時請使用繁體中文，保持簡潔專業。"""
+
+
+@app.get("/ai/models")
+async def list_ai_models():
+    """列出可用的 AI 模型"""
+    return {
+        "models": [
+            {"key": k, **v} for k, v in AVAILABLE_MODELS.items()
+        ],
+        "default": DEFAULT_MODEL
+    }
+
+
+@app.post("/ai/chat")
+async def ai_chat(request: AIChatRequest):
+    """AI 聊天端點 - 使用 OpenRouter"""
+    try:
+        client = get_openrouter_client()
+        tools = convert_tools_for_openai()
+
+        # 取得模型 ID
+        model_key = request.model if request.model in AVAILABLE_MODELS else DEFAULT_MODEL
+        model_id = AVAILABLE_MODELS[model_key]["id"]
+
+        # 轉換訊息格式
+        messages = [
+            {"role": "system", "content": CRM_SYSTEM_PROMPT}
+        ]
+        for m in request.messages:
+            messages.append({"role": m.role, "content": m.content})
+
+        # 呼叫 OpenRouter API
+        response = client.chat.completions.create(
+            model=model_id,
+            max_tokens=4096,
+            tools=tools,
+            messages=messages,
+            extra_headers={
+                "HTTP-Referer": "https://hj.yourspce.org",
+                "X-Title": "Hour Jungle CRM"
+            }
+        )
+
+        # 處理工具調用
+        tool_calls_made = []
+        assistant_message = response.choices[0].message
+
+        while assistant_message.tool_calls:
+            # 收集工具調用結果
+            tool_messages = []
+
+            for tool_call in assistant_message.tool_calls:
+                tool_name = tool_call.function.name
+                # 防止 arguments 為 None 導致 json.loads 錯誤
+                tool_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+                tool_id = tool_call.id
+
+                logger.info(f"AI calling tool: {tool_name} with {tool_args}")
+
+                # 執行工具
+                if tool_name in MCP_TOOLS:
+                    handler = MCP_TOOLS[tool_name]["handler"]
+                    try:
+                        result = await handler(**tool_args)
+                        tool_result = json.dumps(result, ensure_ascii=False, default=str)
+                        tool_calls_made.append({
+                            "tool": tool_name,
+                            "input": tool_args,
+                            "result": result
+                        })
+                    except Exception as e:
+                        logger.error(f"Tool {tool_name} error: {e}")
+                        tool_result = f"Error: {str(e)}"
+                else:
+                    tool_result = f"Tool '{tool_name}' not found"
+
+                tool_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_id,
+                    "content": tool_result
+                })
+
+            # 繼續對話，包含工具結果
+            messages.append({
+                "role": "assistant",
+                "content": assistant_message.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments or "{}"
+                        }
+                    } for tc in assistant_message.tool_calls
+                ]
+            })
+            messages.extend(tool_messages)
+
+            # 再次呼叫 API
+            response = client.chat.completions.create(
+                model=model_id,
+                max_tokens=4096,
+                tools=tools,
+                messages=messages,
+                extra_headers={
+                    "HTTP-Referer": "https://hj.yourspce.org",
+                    "X-Title": "Hour Jungle CRM"
+                }
+            )
+            assistant_message = response.choices[0].message
+
+        # 提取最終文字回應
+        final_text = assistant_message.content or ""
+
+        return AIChatResponse(
+            success=True,
+            message=final_text,
+            model_used=model_key,
+            tool_calls=tool_calls_made
+        )
+
+    except Exception as e:
+        logger.error(f"AI chat error: {e}")
+        return AIChatResponse(
+            success=False,
+            message=f"AI 服務錯誤：{str(e)}",
+            model_used=request.model,
+            tool_calls=[]
+        )
+
+
+# ============================================================================
+# AI Chat Streaming Endpoint
+# ============================================================================
+
+@app.post("/ai/chat/stream")
+async def ai_chat_stream(request: AIChatRequest):
+    """AI 聊天串流端點 - 使用 Server-Sent Events"""
+
+    async def generate():
+        try:
+            client = get_openrouter_client()
+            tools = convert_tools_for_openai()
+
+            model_key = request.model if request.model in AVAILABLE_MODELS else DEFAULT_MODEL
+            model_id = AVAILABLE_MODELS[model_key]["id"]
+
+            messages = [{"role": "system", "content": CRM_SYSTEM_PROMPT}]
+            for m in request.messages:
+                messages.append({"role": m.role, "content": m.content})
+
+            # 第一次調用（可能有工具調用）
+            response = client.chat.completions.create(
+                model=model_id,
+                max_tokens=4096,
+                tools=tools,
+                messages=messages,
+                extra_headers={
+                    "HTTP-Referer": "https://hj.yourspce.org",
+                    "X-Title": "Hour Jungle CRM"
+                }
+            )
+
+            assistant_message = response.choices[0].message
+            tool_calls_made = []
+
+            # 處理工具調用（非串流）
+            while assistant_message.tool_calls:
+                # 發送工具調用狀態
+                for tool_call in assistant_message.tool_calls:
+                    tool_name = tool_call.function.name
+                    yield f"data: {json.dumps({'type': 'tool', 'name': tool_name}, ensure_ascii=False)}\n\n"
+
+                tool_messages = []
+                for tool_call in assistant_message.tool_calls:
+                    tool_name = tool_call.function.name
+                    tool_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+                    tool_id = tool_call.id
+
+                    if tool_name in MCP_TOOLS:
+                        handler = MCP_TOOLS[tool_name]["handler"]
+                        try:
+                            result = await handler(**tool_args)
+                            tool_result = json.dumps(result, ensure_ascii=False, default=str)
+                            tool_calls_made.append({"tool": tool_name, "input": tool_args})
+                        except Exception as e:
+                            tool_result = f"Error: {str(e)}"
+                    else:
+                        tool_result = f"Tool '{tool_name}' not found"
+
+                    tool_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_id,
+                        "content": tool_result
+                    })
+
+                messages.append({
+                    "role": "assistant",
+                    "content": assistant_message.content,
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments or "{}"
+                            }
+                        } for tc in assistant_message.tool_calls
+                    ]
+                })
+                messages.extend(tool_messages)
+
+                response = client.chat.completions.create(
+                    model=model_id,
+                    max_tokens=4096,
+                    tools=tools,
+                    messages=messages,
+                    extra_headers={
+                        "HTTP-Referer": "https://hj.yourspce.org",
+                        "X-Title": "Hour Jungle CRM"
+                    }
+                )
+                assistant_message = response.choices[0].message
+
+            # 最終回應使用串流
+            stream = client.chat.completions.create(
+                model=model_id,
+                max_tokens=4096,
+                messages=messages + [{"role": "assistant", "content": ""}] if not assistant_message.content else messages,
+                stream=True,
+                extra_headers={
+                    "HTTP-Referer": "https://hj.yourspce.org",
+                    "X-Title": "Hour Jungle CRM"
+                }
+            )
+
+            # 如果已有最終內容，直接輸出
+            if assistant_message.content:
+                yield f"data: {json.dumps({'type': 'content', 'text': assistant_message.content}, ensure_ascii=False)}\n\n"
+            else:
+                # 串流輸出
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        yield f"data: {json.dumps({'type': 'content', 'text': chunk.choices[0].delta.content}, ensure_ascii=False)}\n\n"
+
+            yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+        except Exception as e:
+            logger.error(f"AI chat stream error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 # ============================================================================
