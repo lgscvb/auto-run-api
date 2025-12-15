@@ -199,6 +199,144 @@ async def get_renewal_status_summary(
         }
 
 
+async def renewal_set_flag(
+    contract_id: int,
+    flag: str,
+    value: bool,
+    notes: Optional[str] = None
+) -> dict:
+    """
+    設定或清除續約 Checklist 的 flag（使用時間戳作為事實來源）
+
+    實作 Cascade Logic:
+    - 設定 paid/signed 時自動補上 confirmed
+    - 清除 flag 時不會自動清除其他 flag
+
+    Args:
+        contract_id: 合約 ID
+        flag: flag 名稱 (notified/confirmed/paid/signed)
+        value: True = 設定, False = 清除
+        notes: 備註
+
+    Returns:
+        更新結果，包含更新後的所有 flag 狀態
+    """
+    valid_flags = ['notified', 'confirmed', 'paid', 'signed']
+    if flag not in valid_flags:
+        return {
+            "success": False,
+            "error": f"無效的 flag: {flag}。有效值: {', '.join(valid_flags)}"
+        }
+
+    # 時間戳欄位對應
+    flag_to_timestamp = {
+        'notified': 'renewal_notified_at',
+        'confirmed': 'renewal_confirmed_at',
+        'paid': 'renewal_paid_at',
+        'signed': 'renewal_signed_at'
+    }
+
+    now = datetime.now().isoformat()
+    update_data = {}
+
+    if value:
+        # 設定 flag：寫入時間戳
+        update_data[flag_to_timestamp[flag]] = now
+
+        # Cascade Logic: 設定 paid 或 signed 時，自動補上 confirmed
+        if flag in ['paid', 'signed']:
+            # 先取得目前的合約狀態
+            try:
+                result = await postgrest_request(
+                    "GET",
+                    f"contracts?id=eq.{contract_id}&select=renewal_confirmed_at"
+                )
+                if result and not result[0].get('renewal_confirmed_at'):
+                    # 如果尚未確認，自動補上
+                    update_data['renewal_confirmed_at'] = now
+            except Exception as e:
+                logger.warning(f"取得合約狀態失敗，跳過 cascade: {e}")
+    else:
+        # 清除 flag：設為 null
+        update_data[flag_to_timestamp[flag]] = None
+        # 注意：清除時不會自動清除其他 flag
+
+    if notes:
+        update_data["renewal_notes"] = notes
+
+    try:
+        # 更新資料庫
+        await postgrest_request(
+            "PATCH",
+            f"contracts?id=eq.{contract_id}",
+            data=update_data,
+            headers={"Prefer": "return=representation"}
+        )
+
+        # 取得更新後的完整狀態
+        result = await postgrest_request(
+            "GET",
+            f"contracts?id=eq.{contract_id}&select=id,contract_number,renewal_notified_at,renewal_confirmed_at,renewal_paid_at,renewal_signed_at,invoice_status,renewal_status"
+        )
+
+        if result:
+            contract = result[0]
+            # 計算 computed flags
+            flags = {
+                "is_notified": bool(contract.get('renewal_notified_at')),
+                "is_confirmed": bool(contract.get('renewal_confirmed_at')),
+                "is_paid": bool(contract.get('renewal_paid_at')),
+                "is_signed": bool(contract.get('renewal_signed_at')),
+                "is_invoiced": contract.get('invoice_status') and contract.get('invoice_status') != 'pending_tax_id'
+            }
+
+            # 計算 progress 和 stage
+            completed_count = sum(1 for v in flags.values() if v)
+
+            if completed_count == 0:
+                stage = 'pending'
+            elif completed_count == 5:
+                stage = 'completed'
+            else:
+                stage = 'in_progress'
+
+            # 自動更新 renewal_status 欄位
+            if stage != contract.get('renewal_status'):
+                await postgrest_request(
+                    "PATCH",
+                    f"contracts?id=eq.{contract_id}",
+                    data={"renewal_status": stage}
+                )
+
+            return {
+                "success": True,
+                "contract_id": contract_id,
+                "contract_number": contract.get('contract_number'),
+                "flag_updated": flag,
+                "new_value": value,
+                "flags": flags,
+                "progress": completed_count,
+                "stage": stage,
+                "updated_at": now,
+                "cascade_triggered": flag in ['paid', 'signed'] and value and 'renewal_confirmed_at' in update_data and update_data.get('renewal_confirmed_at') == now
+            }
+
+        return {
+            "success": True,
+            "contract_id": contract_id,
+            "flag_updated": flag,
+            "new_value": value,
+            "updated_at": now
+        }
+
+    except Exception as e:
+        logger.error(f"更新續約 flag 失敗: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 async def batch_update_renewal_status(
     contract_ids: list,
     renewal_status: str,

@@ -418,6 +418,155 @@ async def record_payment(
         raise Exception(f"記錄繳費失敗: {e}")
 
 
+async def commission_pay(
+    commission_id: int,
+    payment_method: str,
+    reference: str = None,
+    notes: str = None
+) -> Dict[str, Any]:
+    """
+    執行佣金付款
+
+    Args:
+        commission_id: 佣金ID
+        payment_method: 付款方式 (transfer/check/cash)
+        reference: 參考資訊（轉帳後五碼或支票號碼）
+        notes: 備註
+
+    Returns:
+        更新後的佣金資料
+    """
+    valid_methods = ["transfer", "check", "cash"]
+    if payment_method not in valid_methods:
+        raise ValueError(f"無效的付款方式，允許: {', '.join(valid_methods)}")
+
+    # 先檢查佣金狀態
+    try:
+        commissions = await postgrest_get("commissions", {"id": f"eq.{commission_id}"})
+        if not commissions:
+            return {"success": False, "message": "找不到佣金記錄"}
+
+        commission = commissions[0]
+
+        # 驗證狀態必須是 eligible 才能付款
+        if commission.get("status") != "eligible":
+            current_status = commission.get("status", "unknown")
+            return {
+                "success": False,
+                "message": f"佣金狀態為 {current_status}，只有 eligible 狀態才能付款"
+            }
+
+        # 更新佣金為已付款
+        update_data = {
+            "status": "paid",
+            "payment_method": payment_method,
+            "paid_at": datetime.now().isoformat()
+        }
+
+        if reference:
+            update_data["payment_reference"] = reference
+        if notes:
+            update_data["notes"] = notes
+
+        result = await postgrest_patch(
+            "commissions",
+            {"id": f"eq.{commission_id}"},
+            update_data
+        )
+
+        if not result:
+            return {"success": False, "message": "更新失敗"}
+
+        updated_commission = result[0] if isinstance(result, list) else result
+
+        return {
+            "success": True,
+            "message": f"佣金 #{commission_id} 已標記為已付款",
+            "commission": updated_commission
+        }
+    except Exception as e:
+        logger.error(f"commission_pay error: {e}")
+        raise Exception(f"佣金付款失敗: {e}")
+
+
+async def payment_undo(
+    payment_id: int,
+    reason: str
+) -> Dict[str, Any]:
+    """
+    撤銷繳費記錄（將已付款狀態改回待付款）
+
+    Args:
+        payment_id: 付款ID
+        reason: 撤銷原因（必填）
+
+    Returns:
+        更新後的付款記錄
+    """
+    if not reason or not reason.strip():
+        raise ValueError("必須提供撤銷原因")
+
+    try:
+        # 先檢查付款狀態
+        payments = await postgrest_get("payments", {"id": f"eq.{payment_id}"})
+        if not payments:
+            return {"success": False, "message": "找不到付款記錄"}
+
+        payment = payments[0]
+
+        # 驗證狀態必須是 paid 才能撤銷
+        if payment.get("payment_status") != "paid":
+            current_status = payment.get("payment_status", "unknown")
+            return {
+                "success": False,
+                "message": f"付款狀態為 {current_status}，只有 paid 狀態才能撤銷"
+            }
+
+        # 記錄原本的付款資訊（用於審計追蹤）
+        original_info = {
+            "paid_at": payment.get("paid_at"),
+            "payment_method": payment.get("payment_method"),
+            "reference": payment.get("reference"),
+            "undone_at": datetime.now().isoformat(),
+            "undo_reason": reason.strip()
+        }
+
+        # 取得現有的 notes，附加撤銷記錄
+        existing_notes = payment.get("notes") or ""
+        undo_note = f"\n[撤銷記錄] {datetime.now().strftime('%Y-%m-%d %H:%M')} - 原付款方式: {payment.get('payment_method')}, 原付款日: {payment.get('paid_at')}, 撤銷原因: {reason.strip()}"
+        new_notes = existing_notes + undo_note
+
+        # 更新付款狀態為 pending，清除付款資訊
+        update_data = {
+            "payment_status": "pending",
+            "payment_method": None,
+            "paid_at": None,
+            "reference": None,
+            "notes": new_notes.strip()
+        }
+
+        result = await postgrest_patch(
+            "payments",
+            {"id": f"eq.{payment_id}"},
+            update_data
+        )
+
+        if not result:
+            return {"success": False, "message": "更新失敗"}
+
+        updated_payment = result[0] if isinstance(result, list) else result
+
+        return {
+            "success": True,
+            "message": f"付款 #{payment_id} 已撤銷",
+            "payment": updated_payment,
+            "original_info": original_info
+        }
+    except Exception as e:
+        logger.error(f"payment_undo error: {e}")
+        raise Exception(f"撤銷繳費失敗: {e}")
+
+
 async def create_contract(
     customer_id: int,
     branch_id: int,
