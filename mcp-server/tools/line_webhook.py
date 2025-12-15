@@ -441,13 +441,42 @@ def create_booking_success_flex(booking: Dict) -> Dict:
                 "layout": "vertical",
                 "contents": [
                     {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "button",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "查看我的預約",
+                                    "data": "action=list"
+                                },
+                                "style": "primary",
+                                "flex": 1
+                            },
+                            {
+                                "type": "button",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "重新預約",
+                                    "data": "action=start"
+                                },
+                                "style": "secondary",
+                                "flex": 1,
+                                "margin": "sm"
+                            }
+                        ]
+                    },
+                    {
                         "type": "button",
                         "action": {
                             "type": "postback",
                             "label": "取消此預約",
                             "data": f"action=cancel&booking_id={booking['id']}"
                         },
-                        "style": "secondary"
+                        "style": "link",
+                        "height": "sm",
+                        "margin": "sm"
                     }
                 ]
             }
@@ -584,6 +613,12 @@ async def handle_postback_event(event: Dict) -> Dict[str, Any]:
         booking_id = params.get("booking_id", [None])[0]
         if booking_id:
             return await cancel_booking(line_user_id, int(booking_id))
+    elif action == "list":
+        # 查看我的預約
+        return await show_my_bookings(line_user_id)
+    elif action == "start":
+        # 重新開始預約流程
+        return await start_booking_flow(line_user_id)
 
     return {"handled": False}
 
