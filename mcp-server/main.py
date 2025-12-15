@@ -1278,13 +1278,13 @@ async def classify_intent(message_text: str) -> str:
 @app.post("/api/line/forward")
 async def line_forward(request: LineForwardRequest):
     """
-    接收 Brain 轉發的 LINE 事件
-    方案 B：所有訊息都進來，先用 LLM 判斷意圖
-    - 如果是預約意圖 → MCP 處理
-    - 如果不是 → 返回給 Brain 處理
+    接收 Brain 轉發的 LINE 事件（會議室預約）
+
+    注意：Brain 已經用 LLM 判斷意圖是「預約會議室」才會轉發到這裡
+    這裡只需處理預約流程，不需再做意圖分類
     """
     try:
-        # Postback 事件直接處理（已在預約流程中）
+        # Postback 事件（預約流程中的選擇）
         if request.event_type == "postback":
             event = {
                 "type": "postback",
@@ -1295,33 +1295,25 @@ async def line_forward(request: LineForwardRequest):
             return {
                 "success": True,
                 "handled": result.get("handled", False),
-                "intent": "booking_flow"
+                "intent": "booking_flow",
+                "reply_text": result.get("reply_text", "")
             }
 
-        # 文字訊息：先用 LLM 分類意圖
-        intent = await classify_intent(request.message_text)
-        logger.info(f"Intent classified: '{request.message_text}' → {intent}")
+        # 文字訊息：直接進入預約流程
+        event = {
+            "type": "message",
+            "source": {"userId": request.user_id},
+            "message": {"type": "text", "text": request.message_text}
+        }
 
-        # 預約相關意圖 → MCP 處理
-        if intent in ["booking_start", "booking_query", "booking_cancel", "booking_help", "booking_flow"]:
-            event = {
-                "type": "message",
-                "source": {"userId": request.user_id},
-                "message": {"type": "text", "text": request.message_text}
-            }
-            result = await handle_line_event(event)
-            return {
-                "success": True,
-                "handled": result.get("handled", False),
-                "intent": intent
-            }
+        logger.info(f"Processing booking request: user={request.user_id}, text='{request.message_text}'")
+        result = await handle_line_event(event)
 
-        # 其他意圖 → 返回給 Brain 處理
         return {
             "success": True,
-            "handled": False,
-            "intent": "other",
-            "message": "Not booking related, Brain should handle"
+            "handled": result.get("handled", False),
+            "intent": "booking",
+            "reply_text": result.get("reply_text", "")
         }
 
     except Exception as e:
