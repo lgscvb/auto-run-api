@@ -42,7 +42,11 @@ async def postgrest_get(endpoint: str, params: dict = None) -> Any:
 async def postgrest_post(endpoint: str, data: dict, headers: dict = None) -> Any:
     """PostgREST POST 請求"""
     if _postgrest_request:
-        return await _postgrest_request("POST", endpoint, data=data, headers=headers)
+        # 確保 Prefer header 被傳入以取得回傳資料
+        post_headers = {"Prefer": "return=representation"}
+        if headers:
+            post_headers.update(headers)
+        return await _postgrest_request("POST", endpoint, data=data, headers=post_headers)
 
     url = f"{POSTGREST_URL}/{endpoint}"
     default_headers = {"Content-Type": "application/json", "Prefer": "return=representation"}
