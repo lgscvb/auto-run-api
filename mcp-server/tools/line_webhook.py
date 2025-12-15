@@ -183,31 +183,59 @@ def create_date_selection_flex() -> Dict:
     }
 
 
-def create_time_selection_flex(available_slots: list, selected_date: str) -> Dict:
-    """建立時段選擇 Flex Message"""
-    # 分成上午和下午
-    morning_slots = [s for s in available_slots if s["start"] < "12:00"]
-    afternoon_slots = [s for s in available_slots if s["start"] >= "12:00"]
+def create_time_selection_flex(available_slots: list, selected_date: str, all_busy_times: list = None) -> Dict:
+    """建立時段選擇 Flex Message（顯示可預約和已被訂的時段）"""
+    from datetime import datetime, time, timedelta
 
-    def create_time_buttons(slots: list) -> list:
+    # 生成所有時段（09:00 ~ 18:00，每小時一格）
+    all_slots = []
+    for hour in range(9, 18):
+        slot_start = f"{hour:02d}:00"
+        all_slots.append(slot_start)
+
+    # 建立可用時段的 set（方便查詢）
+    available_set = set(s["start"][:5] for s in available_slots)
+
+    # 分成上午和下午
+    morning_hours = [s for s in all_slots if int(s.split(":")[0]) < 12]
+    afternoon_hours = [s for s in all_slots if int(s.split(":")[0]) >= 12]
+
+    def create_time_buttons(hours: list) -> list:
         buttons = []
-        for slot in slots:
-            buttons.append({
-                "type": "button",
-                "action": {
-                    "type": "postback",
-                    "label": slot["start"],
-                    "data": f"action=book&step=start_time&start={slot['start']}"
-                },
-                "style": "secondary",
-                "margin": "xs",
-                "height": "sm"
-            })
+        for slot_start in hours:
+            is_available = slot_start in available_set
+
+            if is_available:
+                # 可預約 - 綠色按鈕
+                buttons.append({
+                    "type": "button",
+                    "action": {
+                        "type": "postback",
+                        "label": f"✅ {slot_start}",
+                        "data": f"action=book&step=start_time&start={slot_start}"
+                    },
+                    "style": "primary",
+                    "margin": "xs",
+                    "height": "sm"
+                })
+            else:
+                # 已被訂 - 灰色按鈕（不可點擊，使用 message action 顯示提示）
+                buttons.append({
+                    "type": "button",
+                    "action": {
+                        "type": "message",
+                        "label": f"❌ {slot_start}",
+                        "text": f"抱歉，{slot_start} 已被預約囉～請選擇其他時段"
+                    },
+                    "style": "secondary",
+                    "margin": "xs",
+                    "height": "sm"
+                })
         return buttons
 
     bubbles = []
 
-    if morning_slots:
+    if morning_hours:
         bubbles.append({
             "type": "bubble",
             "size": "kilo",
@@ -215,17 +243,18 @@ def create_time_selection_flex(available_slots: list, selected_date: str) -> Dic
                 "type": "box",
                 "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": "🌅 上午", "weight": "bold", "size": "md"}
+                    {"type": "text", "text": "🌅 上午", "weight": "bold", "size": "md"},
+                    {"type": "text", "text": "✅可預約 ❌已被訂", "size": "xxs", "color": "#888888"}
                 ]
             },
             "body": {
                 "type": "box",
                 "layout": "vertical",
-                "contents": create_time_buttons(morning_slots)
+                "contents": create_time_buttons(morning_hours)
             }
         })
 
-    if afternoon_slots:
+    if afternoon_hours:
         bubbles.append({
             "type": "bubble",
             "size": "kilo",
@@ -233,17 +262,19 @@ def create_time_selection_flex(available_slots: list, selected_date: str) -> Dic
                 "type": "box",
                 "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": "🌇 下午", "weight": "bold", "size": "md"}
+                    {"type": "text", "text": "🌇 下午", "weight": "bold", "size": "md"},
+                    {"type": "text", "text": "✅可預約 ❌已被訂", "size": "xxs", "color": "#888888"}
                 ]
             },
             "body": {
                 "type": "box",
                 "layout": "vertical",
-                "contents": create_time_buttons(afternoon_slots)
+                "contents": create_time_buttons(afternoon_hours)
             }
         })
 
-    if not bubbles:
+    # 檢查是否所有時段都已被訂
+    if not available_slots:
         return {
             "type": "text",
             "text": f"😢 {selected_date} 已無可用時段，請選擇其他日期。"
