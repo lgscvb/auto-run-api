@@ -130,7 +130,9 @@ from tools.crm_tools import (
     create_customer,
     update_customer,
     record_payment,
-    create_contract
+    create_contract,
+    commission_pay,
+    payment_undo
 )
 
 from tools.line_tools import (
@@ -150,7 +152,65 @@ from tools.renewal_tools import (
     update_invoice_status,
     get_renewal_status_summary,
     batch_update_renewal_status,
+    renewal_set_flag,
     set_postgrest_request as set_renewal_postgrest
+)
+
+from tools.quote_tools import (
+    list_quotes,
+    get_quote,
+    create_quote,
+    update_quote,
+    update_quote_status,
+    delete_quote,
+    convert_quote_to_contract,
+    quote_generate_pdf
+)
+
+from tools.invoice_tools import (
+    invoice_create,
+    invoice_void,
+    invoice_query,
+    invoice_allowance
+)
+
+from tools.contract_tools import (
+    contract_generate_pdf,
+    contract_preview
+)
+
+from tools.settings_tools import (
+    settings_get,
+    settings_update,
+    settings_get_all
+)
+
+from tools.legal_letter_tools import (
+    legal_record_reminder,
+    legal_list_candidates,
+    legal_generate_content,
+    legal_create_letter,
+    legal_generate_pdf,
+    legal_notify_staff,
+    legal_list_pending,
+    legal_update_status
+)
+
+from tools.booking_tools import (
+    booking_list_rooms,
+    booking_check_availability,
+    booking_create,
+    booking_cancel,
+    booking_update,
+    booking_list,
+    booking_get,
+    booking_send_reminder,
+    set_postgrest_request as set_booking_postgrest
+)
+
+from tools.line_webhook import (
+    handle_line_event,
+    verify_signature
 )
 
 
@@ -225,6 +285,14 @@ MCP_TOOLS = {
         },
         "handler": record_payment
     },
+    "crm_payment_undo": {
+        "description": "撤銷繳費記錄（將已付款狀態改回待付款）",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "付款ID", "required": True},
+            "reason": {"type": "string", "description": "撤銷原因（必填）", "required": True}
+        },
+        "handler": payment_undo
+    },
     "crm_create_contract": {
         "description": "建立新合約",
         "parameters": {
@@ -288,6 +356,18 @@ MCP_TOOLS = {
         "handler": get_commission_due
     },
 
+    # 佣金操作工具
+    "commission_pay": {
+        "description": "執行佣金付款（將狀態從 eligible 更新為 paid）",
+        "parameters": {
+            "commission_id": {"type": "integer", "description": "佣金ID", "required": True},
+            "payment_method": {"type": "string", "description": "付款方式 (transfer/check/cash)", "required": True},
+            "reference": {"type": "string", "description": "參考資訊（轉帳後五碼或支票號碼）", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": commission_pay
+    },
+
     # 續約流程管理工具
     "renewal_update_status": {
         "description": "更新合約的續約狀態",
@@ -322,6 +402,342 @@ MCP_TOOLS = {
             "notes": {"type": "string", "description": "備註", "optional": True}
         },
         "handler": batch_update_renewal_status
+    },
+    "renewal_set_flag": {
+        "description": "設定或清除續約 Checklist 的 flag（使用時間戳作為事實來源）。設定 paid/signed 會自動補上 confirmed（Cascade Logic）",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "合約ID", "required": True},
+            "flag": {"type": "string", "description": "flag 名稱 (notified/confirmed/paid/signed)", "required": True},
+            "value": {"type": "boolean", "description": "True = 設定, False = 清除", "required": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": renewal_set_flag
+    },
+
+    # 報價單工具
+    "quote_list": {
+        "description": "列出報價單",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "optional": True},
+            "status": {"type": "string", "description": "狀態 (draft/sent/viewed/accepted/rejected/expired/converted)", "optional": True},
+            "customer_id": {"type": "integer", "description": "客戶ID", "optional": True},
+            "limit": {"type": "integer", "description": "回傳筆數", "default": 50}
+        },
+        "handler": list_quotes
+    },
+    "quote_get": {
+        "description": "取得報價單詳情",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True}
+        },
+        "handler": get_quote
+    },
+    "quote_create": {
+        "description": "建立報價單",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "required": True},
+            "customer_id": {"type": "integer", "description": "客戶ID", "optional": True},
+            "customer_name": {"type": "string", "description": "客戶姓名（未建立客戶時）", "optional": True},
+            "customer_phone": {"type": "string", "description": "客戶電話", "optional": True},
+            "customer_email": {"type": "string", "description": "客戶Email", "optional": True},
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "contract_type": {"type": "string", "description": "合約類型", "default": "virtual_office"},
+            "plan_name": {"type": "string", "description": "方案名稱", "optional": True},
+            "contract_months": {"type": "integer", "description": "合約月數", "default": 12},
+            "items": {"type": "array", "description": "費用項目", "optional": True},
+            "discount_amount": {"type": "number", "description": "折扣金額", "default": 0},
+            "discount_note": {"type": "string", "description": "折扣說明", "optional": True},
+            "deposit_amount": {"type": "number", "description": "押金", "default": 0},
+            "valid_days": {"type": "integer", "description": "有效天數", "default": 30},
+            "internal_notes": {"type": "string", "description": "內部備註", "optional": True},
+            "customer_notes": {"type": "string", "description": "給客戶的備註", "optional": True}
+        },
+        "handler": create_quote
+    },
+    "quote_update": {
+        "description": "更新報價單",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True},
+            "updates": {"type": "object", "description": "要更新的欄位", "required": True}
+        },
+        "handler": update_quote
+    },
+    "quote_update_status": {
+        "description": "更新報價單狀態",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True},
+            "status": {"type": "string", "description": "新狀態 (draft/sent/viewed/accepted/rejected/expired/converted)", "required": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": update_quote_status
+    },
+    "quote_delete": {
+        "description": "刪除報價單（僅限草稿）",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True}
+        },
+        "handler": delete_quote
+    },
+    "quote_convert_to_contract": {
+        "description": "將已接受的報價單轉換為合約草稿",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True},
+            "start_date": {"type": "string", "description": "合約開始日期 (YYYY-MM-DD)", "optional": True},
+            "payment_cycle": {"type": "string", "description": "繳費週期 (monthly/quarterly/semi_annual/annual)", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": convert_quote_to_contract
+    },
+    "quote_generate_pdf": {
+        "description": "生成報價單 PDF",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True}
+        },
+        "handler": quote_generate_pdf
+    },
+
+    # 發票工具
+    "invoice_create": {
+        "description": "開立電子發票（光貿 API）",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "繳費記錄ID", "required": True},
+            "invoice_type": {"type": "string", "description": "發票類型 (personal=個人, business=公司)", "optional": True},
+            "buyer_name": {"type": "string", "description": "買受人名稱（公司發票必填）", "optional": True},
+            "buyer_tax_id": {"type": "string", "description": "統一編號（公司發票必填）", "optional": True},
+            "carrier_type": {"type": "string", "description": "載具類型 (mobile=手機條碼, natural_person=自然人憑證, donate=捐贈)", "optional": True},
+            "carrier_number": {"type": "string", "description": "載具號碼", "optional": True},
+            "donate_code": {"type": "string", "description": "愛心碼", "optional": True},
+            "print_flag": {"type": "boolean", "description": "是否列印", "optional": True}
+        },
+        "handler": invoice_create
+    },
+    "invoice_void": {
+        "description": "作廢電子發票",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "繳費記錄ID", "required": True},
+            "reason": {"type": "string", "description": "作廢原因", "required": True}
+        },
+        "handler": invoice_void
+    },
+    "invoice_query": {
+        "description": "查詢電子發票",
+        "parameters": {
+            "invoice_number": {"type": "string", "description": "發票號碼", "optional": True},
+            "payment_id": {"type": "integer", "description": "繳費記錄ID", "optional": True},
+            "branch_id": {"type": "integer", "description": "分館ID", "optional": True},
+            "start_date": {"type": "string", "description": "開始日期 (YYYY-MM-DD)", "optional": True},
+            "end_date": {"type": "string", "description": "結束日期 (YYYY-MM-DD)", "optional": True}
+        },
+        "handler": invoice_query
+    },
+    "invoice_allowance": {
+        "description": "開立發票折讓單",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "繳費記錄ID", "required": True},
+            "allowance_amount": {"type": "number", "description": "折讓金額", "required": True},
+            "reason": {"type": "string", "description": "折讓原因", "required": True}
+        },
+        "handler": invoice_allowance
+    },
+
+    # 合約生成工具
+    "contract_generate_pdf": {
+        "description": "生成合約 PDF",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "合約ID", "required": True},
+            "template": {"type": "string", "description": "模板名稱 (standard, virtual_office, shared_office)", "optional": True}
+        },
+        "handler": contract_generate_pdf
+    },
+    "contract_preview": {
+        "description": "預覽合約內容（不生成 PDF）",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "合約ID", "required": True}
+        },
+        "handler": contract_preview
+    },
+
+    # 系統設定工具
+    "settings_get": {
+        "description": "取得系統設定",
+        "parameters": {
+            "key": {"type": "string", "description": "設定鍵值（可選）", "optional": True},
+            "category": {"type": "string", "description": "分類篩選（可選）", "optional": True}
+        },
+        "handler": settings_get
+    },
+    "settings_update": {
+        "description": "更新系統設定",
+        "parameters": {
+            "key": {"type": "string", "description": "設定鍵值", "required": True},
+            "value": {"type": "object", "description": "新的設定值", "required": True}
+        },
+        "handler": settings_update
+    },
+    "settings_get_all": {
+        "description": "取得所有系統設定",
+        "parameters": {},
+        "handler": settings_get_all
+    },
+
+    # 存證信函工具
+    "legal_record_reminder": {
+        "description": "記錄催繳，更新付款記錄的催繳次數",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "付款ID", "required": True},
+            "notes": {"type": "string", "description": "催繳備註", "optional": True}
+        },
+        "handler": legal_record_reminder
+    },
+    "legal_list_candidates": {
+        "description": "列出存證信函候選客戶（逾期>14天且催繳>=5次）",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "optional": True},
+            "limit": {"type": "integer", "description": "回傳筆數", "default": 50}
+        },
+        "handler": legal_list_candidates
+    },
+    "legal_generate_content": {
+        "description": "使用 AI 生成存證信函內容",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "付款ID", "required": True},
+            "customer_name": {"type": "string", "description": "客戶姓名", "required": True},
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "address": {"type": "string", "description": "地址", "optional": True},
+            "overdue_amount": {"type": "number", "description": "逾期金額", "required": True},
+            "overdue_days": {"type": "integer", "description": "逾期天數", "required": True},
+            "contract_number": {"type": "string", "description": "合約編號", "optional": True},
+            "reminder_count": {"type": "integer", "description": "催繳次數", "default": 0},
+            "branch_name": {"type": "string", "description": "場館名稱", "optional": True}
+        },
+        "handler": legal_generate_content
+    },
+    "legal_create_letter": {
+        "description": "建立存證信函記錄（草稿）",
+        "parameters": {
+            "payment_id": {"type": "integer", "description": "付款ID", "required": True},
+            "content": {"type": "string", "description": "存證信函內容", "required": True},
+            "recipient_name": {"type": "string", "description": "收件人姓名", "optional": True},
+            "recipient_address": {"type": "string", "description": "收件人地址", "optional": True}
+        },
+        "handler": legal_create_letter
+    },
+    "legal_generate_pdf": {
+        "description": "生成存證信函 PDF",
+        "parameters": {
+            "letter_id": {"type": "integer", "description": "存證信函ID", "required": True}
+        },
+        "handler": legal_generate_pdf
+    },
+    "legal_notify_staff": {
+        "description": "發送 LINE 通知給業務（存證信函待處理）",
+        "parameters": {
+            "letter_id": {"type": "integer", "description": "存證信函ID", "required": True},
+            "staff_line_id": {"type": "string", "description": "業務的 LINE User ID", "optional": True},
+            "message": {"type": "string", "description": "自訂訊息", "optional": True}
+        },
+        "handler": legal_notify_staff
+    },
+    "legal_list_pending": {
+        "description": "列出待處理存證信函",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "optional": True},
+            "status": {"type": "string", "description": "狀態篩選 (draft/approved/sent)", "optional": True},
+            "limit": {"type": "integer", "description": "回傳筆數", "default": 50}
+        },
+        "handler": legal_list_pending
+    },
+    "legal_update_status": {
+        "description": "更新存證信函狀態",
+        "parameters": {
+            "letter_id": {"type": "integer", "description": "存證信函ID", "required": True},
+            "status": {"type": "string", "description": "新狀態 (draft/approved/sent/cancelled)", "required": True},
+            "approved_by": {"type": "string", "description": "審核人", "optional": True},
+            "tracking_number": {"type": "string", "description": "郵局掛號號碼", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": legal_update_status
+    },
+
+    # 會議室預約工具
+    "booking_list_rooms": {
+        "description": "列出會議室",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "optional": True}
+        },
+        "handler": booking_list_rooms
+    },
+    "booking_check_availability": {
+        "description": "查詢會議室可用時段",
+        "parameters": {
+            "room_id": {"type": "integer", "description": "會議室ID", "required": True},
+            "date_str": {"type": "string", "description": "日期 (YYYY-MM-DD)", "required": True},
+            "start_time": {"type": "string", "description": "開始時間 (HH:MM)", "optional": True},
+            "end_time": {"type": "string", "description": "結束時間 (HH:MM)", "optional": True}
+        },
+        "handler": booking_check_availability
+    },
+    "booking_create": {
+        "description": "建立會議室預約",
+        "parameters": {
+            "room_id": {"type": "integer", "description": "會議室ID", "required": True},
+            "customer_id": {"type": "integer", "description": "客戶ID", "required": True},
+            "date_str": {"type": "string", "description": "日期 (YYYY-MM-DD)", "required": True},
+            "start_time": {"type": "string", "description": "開始時間 (HH:MM)", "required": True},
+            "end_time": {"type": "string", "description": "結束時間 (HH:MM)", "required": True},
+            "purpose": {"type": "string", "description": "會議目的", "optional": True},
+            "attendees_count": {"type": "integer", "description": "預計人數", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": booking_create
+    },
+    "booking_cancel": {
+        "description": "取消會議室預約",
+        "parameters": {
+            "booking_id": {"type": "integer", "description": "預約ID", "required": True},
+            "reason": {"type": "string", "description": "取消原因", "optional": True}
+        },
+        "handler": booking_cancel
+    },
+    "booking_update": {
+        "description": "修改會議室預約",
+        "parameters": {
+            "booking_id": {"type": "integer", "description": "預約ID", "required": True},
+            "date_str": {"type": "string", "description": "新日期 (YYYY-MM-DD)", "optional": True},
+            "start_time": {"type": "string", "description": "新開始時間 (HH:MM)", "optional": True},
+            "end_time": {"type": "string", "description": "新結束時間 (HH:MM)", "optional": True},
+            "purpose": {"type": "string", "description": "會議目的", "optional": True},
+            "attendees_count": {"type": "integer", "description": "預計人數", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": booking_update
+    },
+    "booking_list": {
+        "description": "列出會議室預約",
+        "parameters": {
+            "customer_id": {"type": "integer", "description": "客戶ID", "optional": True},
+            "date_str": {"type": "string", "description": "特定日期", "optional": True},
+            "date_from": {"type": "string", "description": "開始日期", "optional": True},
+            "date_to": {"type": "string", "description": "結束日期", "optional": True},
+            "branch_id": {"type": "integer", "description": "場館ID", "optional": True},
+            "status": {"type": "string", "description": "狀態", "optional": True},
+            "limit": {"type": "integer", "description": "回傳筆數", "default": 50}
+        },
+        "handler": booking_list
+    },
+    "booking_get": {
+        "description": "取得預約詳情",
+        "parameters": {
+            "booking_id": {"type": "integer", "description": "預約ID", "required": True}
+        },
+        "handler": booking_get
+    },
+    "booking_send_reminder": {
+        "description": "發送預約提醒",
+        "parameters": {
+            "booking_id": {"type": "integer", "description": "預約ID", "required": True}
+        },
+        "handler": booking_send_reminder
     }
 }
 
@@ -329,6 +745,48 @@ MCP_TOOLS = {
 # ============================================================================
 # FastAPI App
 # ============================================================================
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime, timedelta
+
+# 排程器
+scheduler = AsyncIOScheduler()
+
+
+async def send_booking_reminders():
+    """每 10 分鐘檢查並發送預約提醒（1 小時前）"""
+    try:
+        now = datetime.now()
+        one_hour_later = now + timedelta(hours=1)
+
+        # 查詢需要提醒的預約
+        params = {
+            "booking_date": f"eq.{now.strftime('%Y-%m-%d')}",
+            "status": "eq.confirmed",
+            "reminder_sent": "eq.false",
+            "select": "id,start_time"
+        }
+
+        bookings = await postgrest_request("GET", "meeting_room_bookings", params=params)
+
+        for booking in bookings:
+            # 解析開始時間
+            start_time = booking["start_time"][:5]  # HH:MM
+            start_hour, start_min = map(int, start_time.split(":"))
+            booking_datetime = now.replace(hour=start_hour, minute=start_min, second=0, microsecond=0)
+
+            # 如果預約時間在 now+50min ~ now+70min 之間（約 1 小時前），發送提醒
+            time_diff = (booking_datetime - now).total_seconds() / 60
+            if 50 <= time_diff <= 70:
+                try:
+                    await booking_send_reminder(booking["id"])
+                    logger.info(f"Sent reminder for booking {booking['id']}")
+                except Exception as e:
+                    logger.error(f"Failed to send reminder for booking {booking['id']}: {e}")
+
+    except Exception as e:
+        logger.error(f"send_booking_reminders error: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -338,6 +796,15 @@ async def lifespan(app: FastAPI):
     # 設置續約工具的 postgrest_request
     set_renewal_postgrest(postgrest_request)
     logger.info("Renewal tools initialized")
+
+    # 設置預約工具的 postgrest_request
+    set_booking_postgrest(postgrest_request)
+    logger.info("Booking tools initialized")
+
+    # 啟動排程器
+    scheduler.add_job(send_booking_reminders, 'interval', minutes=10)
+    scheduler.start()
+    logger.info("Scheduler started (booking reminders every 10 min)")
 
     # 測試資料庫連接
     try:
@@ -349,6 +816,8 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    # 關閉排程器
+    scheduler.shutdown()
     logger.info("MCP Server shutting down...")
 
 
@@ -573,6 +1042,294 @@ async def api_today_tasks(branch_id: int = None):
 
 
 # ============================================================================
+# 會議室預約 API Endpoints
+# ============================================================================
+
+@app.get("/api/meeting-rooms")
+async def api_list_meeting_rooms(branch_id: int = None):
+    """會議室列表 API"""
+    result = await booking_list_rooms(branch_id)
+    return result
+
+
+@app.get("/api/bookings")
+async def api_list_bookings(
+    customer_id: int = None,
+    date: str = None,
+    date_from: str = None,
+    date_to: str = None,
+    branch_id: int = None,
+    status: str = None,
+    limit: int = 50
+):
+    """預約列表 API"""
+    result = await booking_list(
+        customer_id=customer_id,
+        date_str=date,
+        date_from=date_from,
+        date_to=date_to,
+        branch_id=branch_id,
+        status=status,
+        limit=limit
+    )
+    return result
+
+
+@app.get("/api/bookings/{booking_id}")
+async def api_get_booking(booking_id: int):
+    """預約詳情 API"""
+    result = await booking_get(booking_id)
+    return result
+
+
+@app.get("/api/bookings/availability/{room_id}")
+async def api_check_availability(
+    room_id: int,
+    date: str,
+    start_time: str = None,
+    end_time: str = None
+):
+    """查詢可用時段 API"""
+    result = await booking_check_availability(room_id, date, start_time, end_time)
+    return result
+
+
+class BookingCreateRequest(BaseModel):
+    """建立預約請求"""
+    room_id: int
+    customer_id: int
+    date: str
+    start_time: str
+    end_time: str
+    purpose: str = None
+    attendees_count: int = None
+    notes: str = None
+
+
+@app.post("/api/bookings")
+async def api_create_booking(request: BookingCreateRequest):
+    """建立預約 API"""
+    result = await booking_create(
+        room_id=request.room_id,
+        customer_id=request.customer_id,
+        date_str=request.date,
+        start_time=request.start_time,
+        end_time=request.end_time,
+        purpose=request.purpose,
+        attendees_count=request.attendees_count,
+        notes=request.notes,
+        created_by="admin"
+    )
+    return result
+
+
+class BookingUpdateRequest(BaseModel):
+    """更新預約請求"""
+    date: str = None
+    start_time: str = None
+    end_time: str = None
+    purpose: str = None
+    attendees_count: int = None
+    notes: str = None
+
+
+@app.patch("/api/bookings/{booking_id}")
+async def api_update_booking(booking_id: int, request: BookingUpdateRequest):
+    """更新預約 API"""
+    result = await booking_update(
+        booking_id=booking_id,
+        date_str=request.date,
+        start_time=request.start_time,
+        end_time=request.end_time,
+        purpose=request.purpose,
+        attendees_count=request.attendees_count,
+        notes=request.notes
+    )
+    return result
+
+
+class BookingCancelRequest(BaseModel):
+    """取消預約請求"""
+    reason: str = None
+
+
+@app.post("/api/bookings/{booking_id}/cancel")
+async def api_cancel_booking(booking_id: int, request: BookingCancelRequest = None):
+    """取消預約 API"""
+    reason = request.reason if request else None
+    result = await booking_cancel(booking_id, reason)
+    return result
+
+
+# ============================================================================
+# LINE Webhook Endpoint
+# ============================================================================
+
+@app.post("/line/webhook")
+async def line_webhook(request: Request):
+    """LINE Bot Webhook 端點"""
+    signature = request.headers.get("X-Line-Signature", "")
+    body = await request.body()
+
+    # 驗證簽名
+    if not verify_signature(body, signature):
+        logger.warning("Invalid LINE webhook signature")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    # 解析事件
+    try:
+        body_json = json.loads(body)
+        events = body_json.get("events", [])
+
+        for event in events:
+            try:
+                await handle_line_event(event)
+            except Exception as e:
+                logger.error(f"Error handling LINE event: {e}")
+
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"LINE webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class LineForwardRequest(BaseModel):
+    """LINE 事件轉發請求（來自 Brain）"""
+    user_id: str
+    message_text: str
+    event_type: str = "message"  # message, postback
+    postback_data: str = None    # postback 時使用
+
+
+# ============================================================================
+# LLM 意圖分類器
+# ============================================================================
+
+INTENT_CLASSIFIER_PROMPT = """你是一個意圖分類器。根據用戶訊息，判斷屬於哪個意圖類別。
+
+意圖類別：
+1. booking_start - 用戶想要預約會議室（例如：「預約」「預約會議室」「我要訂會議室」「book room」）
+2. booking_query - 用戶想查詢自己的預約（例如：「我的預約」「查詢預約」「我有什麼預約」）
+3. booking_cancel - 用戶想取消預約（例如：「取消預約」「取消」「不要了」）
+4. booking_help - 用戶詢問預約相關幫助（例如：「怎麼預約」「會議室怎麼訂」）
+5. booking_flow - 用戶正在預約流程中的回應（這個很難判斷，通常是 other）
+6. other - 其他一般對話、問候、問題等（不是預約相關）
+
+⚠️ 重要規則：
+- 只有明確提到「預約」「會議室」「book」「訂」等關鍵字才算 booking 意圖
+- 一般問候（你好、嗨、早安）→ other
+- 業務問題（稅務、報價、合約）→ other
+- 不確定時 → other
+
+只回覆意圖類別名稱，不要其他內容。
+
+用戶訊息：{message}"""
+
+
+async def classify_intent(message_text: str) -> str:
+    """
+    使用 LLM 分類用戶意圖
+    返回: booking_start | booking_query | booking_cancel | booking_help | other
+    """
+    if not settings.openrouter_api_key:
+        logger.warning("OpenRouter API key not configured, defaulting to 'other'")
+        return "other"
+
+    try:
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=settings.openrouter_api_key
+        )
+
+        # 使用快速模型進行意圖分類（成本低、速度快）
+        response = client.chat.completions.create(
+            model="google/gemini-2.0-flash-001",  # 快速便宜的模型
+            max_tokens=20,
+            messages=[
+                {"role": "user", "content": INTENT_CLASSIFIER_PROMPT.format(message=message_text)}
+            ],
+            extra_headers={
+                "HTTP-Referer": "https://hj.yourspce.org",
+                "X-Title": "Hour Jungle CRM - Intent Classifier"
+            }
+        )
+
+        intent = response.choices[0].message.content.strip().lower()
+
+        # 正規化意圖
+        if "booking_start" in intent or intent == "booking_start":
+            return "booking_start"
+        elif "booking_query" in intent or intent == "booking_query":
+            return "booking_query"
+        elif "booking_cancel" in intent or intent == "booking_cancel":
+            return "booking_cancel"
+        elif "booking_help" in intent or intent == "booking_help":
+            return "booking_help"
+        elif "booking_flow" in intent or intent == "booking_flow":
+            return "booking_flow"
+        else:
+            return "other"
+
+    except Exception as e:
+        logger.error(f"Intent classification error: {e}")
+        return "other"
+
+
+@app.post("/api/line/forward")
+async def line_forward(request: LineForwardRequest):
+    """
+    接收 Brain 轉發的 LINE 事件
+    方案 B：所有訊息都進來，先用 LLM 判斷意圖
+    - 如果是預約意圖 → MCP 處理
+    - 如果不是 → 返回給 Brain 處理
+    """
+    try:
+        # Postback 事件直接處理（已在預約流程中）
+        if request.event_type == "postback":
+            event = {
+                "type": "postback",
+                "source": {"userId": request.user_id},
+                "postback": {"data": request.postback_data}
+            }
+            result = await handle_line_event(event)
+            return {
+                "success": True,
+                "handled": result.get("handled", False),
+                "intent": "booking_flow"
+            }
+
+        # 文字訊息：先用 LLM 分類意圖
+        intent = await classify_intent(request.message_text)
+        logger.info(f"Intent classified: '{request.message_text}' → {intent}")
+
+        # 預約相關意圖 → MCP 處理
+        if intent in ["booking_start", "booking_query", "booking_cancel", "booking_help", "booking_flow"]:
+            event = {
+                "type": "message",
+                "source": {"userId": request.user_id},
+                "message": {"type": "text", "text": request.message_text}
+            }
+            result = await handle_line_event(event)
+            return {
+                "success": True,
+                "handled": result.get("handled", False),
+                "intent": intent
+            }
+
+        # 其他意圖 → 返回給 Brain 處理
+        return {
+            "success": True,
+            "handled": False,
+            "intent": "other",
+            "message": "Not booking related, Brain should handle"
+        }
+
+    except Exception as e:
+        logger.error(f"LINE forward error: {e}")
+        return {"success": False, "error": str(e), "intent": "error"}
+
+
+# ============================================================================
 # AI Chat Endpoint (內部 AI 助手) - 使用 OpenRouter
 # ============================================================================
 
@@ -694,6 +1451,7 @@ CRM_SYSTEM_PROMPT = """你是 Hour Jungle CRM 的智能助手，專門協助員�
 4. 查詢營收報表、佣金報表
 5. 發送 LINE 訊息給客戶（繳費提醒、續約提醒）
 6. 建立新客戶、更新客戶資料、記錄繳費
+7. 佣金付款、撤銷繳費記錄
 
 使用說明：
 - 當用戶詢問客戶資料時，使用 crm_search_customers 或 crm_get_customer_detail
@@ -701,6 +1459,40 @@ CRM_SYSTEM_PROMPT = """你是 Hour Jungle CRM 的智能助手，專門協助員�
 - 當用戶詢問到期合約時，使用 crm_list_renewals_due
 - 當用戶詢問營收時，使用 report_revenue_summary
 - 當用戶詢問待繳款項時，使用 crm_list_payments_due
+
+⚠️ 重要：執行前確認機制
+以下操作屬於「寫入操作」，執行前必須先向用戶確認：
+- crm_create_customer（建立客戶）
+- crm_update_customer（更新客戶）
+- crm_record_payment（記錄繳費）
+- crm_payment_undo（撤銷繳費）
+- crm_create_contract（建立合約）
+- commission_pay（佣金付款）
+- renewal_update_status（更新續約狀態）
+- renewal_batch_update（批次更新續約）
+- line_send_message（發送 LINE 訊息）
+- line_send_payment_reminder（發送繳費提醒）
+- line_send_renewal_reminder（發送續約提醒）
+- invoice_create（開立發票）
+- invoice_void（作廢發票）
+- invoice_allowance（開立折讓單）
+- contract_generate_pdf（生成合約 PDF）
+
+執行寫入操作前，你必須：
+1. 先說明你將要執行的操作內容（工具名稱、關鍵參數）
+2. 明確詢問「是否確認執行？」
+3. 只有在用戶回覆「是」「確認」「好」「執行」等肯定回答後才能執行
+4. 如果用戶回覆「否」「取消」「不要」等，則不執行並詢問是否需要其他協助
+
+範例：
+用戶：幫我記錄王小明的繳費
+你：我將執行以下操作：
+📝 記錄繳費 (crm_record_payment)
+- 客戶：王小明
+- 付款ID: 123
+- 金額：$5,000
+
+是否確認執行此操作？
 
 回覆時請使用繁體中文，保持簡潔專業。"""
 
