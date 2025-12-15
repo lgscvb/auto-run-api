@@ -5,6 +5,7 @@ LINE 訊息發送相關工具
 
 import logging
 import os
+import json
 from typing import Dict, Any, Optional
 
 import httpx
@@ -16,6 +17,9 @@ LINE_API_URL = "https://api.line.me/v2/bot/message/push"
 
 POSTGREST_URL = os.getenv("POSTGREST_URL", "http://postgrest:3000")
 
+# Brain API URL (用於同步訊息記錄)
+BRAIN_API_URL = os.getenv("BRAIN_API_URL", "http://brain.yourspce.org")
+
 
 async def postgrest_get(endpoint: str, params: dict = None) -> Any:
     """PostgREST GET 請求"""
@@ -26,17 +30,110 @@ async def postgrest_get(endpoint: str, params: dict = None) -> Any:
         return response.json()
 
 
-async def send_line_push(line_user_id: str, messages: list) -> Dict[str, Any]:
+async def log_to_brain(
+    sender_id: str,
+    sender_name: str,
+    content: str,
+    message_type: str = "bot_reply",
+    timestamp: str = None
+) -> bool:
     """
-    發送 LINE Push Message
+    同步訊息記錄到 Brain（背景執行，不影響主流程）
+
+    Args:
+        sender_id: LINE User ID
+        sender_name: 用戶名稱
+        content: 訊息內容
+        message_type: bot_reply, user_action, system_event
+        timestamp: ISO 格式時間戳
+
+    Returns:
+        是否成功
+    """
+    if not BRAIN_API_URL:
+        return False
+
+    try:
+        from datetime import datetime
+        if not timestamp:
+            timestamp = datetime.utcnow().isoformat() + "Z"
+
+        payload = {
+            "sender_id": sender_id,
+            "sender_name": sender_name,
+            "content": content,
+            "message_type": message_type,
+            "source": "mcp_server",
+            "timestamp": timestamp
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{BRAIN_API_URL}/api/integration/log",
+                json=payload,
+                timeout=5.0  # 短超時，不阻塞主流程
+            )
+
+            if response.status_code == 200:
+                logger.debug(f"Brain log success: {content[:30]}...")
+                return True
+            else:
+                logger.warning(f"Brain log failed: {response.status_code}")
+                return False
+
+    except Exception as e:
+        # 同步失敗不影響主流程
+        logger.warning(f"Brain log error (ignored): {e}")
+        return False
+
+
+def extract_message_content(messages: list) -> str:
+    """
+    從 LINE 訊息列表中提取文字內容（用於記錄）
+
+    Args:
+        messages: LINE 訊息列表
+
+    Returns:
+        提取的文字內容
+    """
+    contents = []
+    for msg in messages:
+        if msg.get("type") == "text":
+            contents.append(msg.get("text", ""))
+        elif msg.get("type") == "flex":
+            # Flex Message：提取 altText 或標記為 Flex
+            alt_text = msg.get("altText", "[Flex Message]")
+            contents.append(f"[Flex] {alt_text}")
+        else:
+            contents.append(f"[{msg.get('type', 'unknown')}]")
+
+    return " | ".join(contents) if contents else "[空訊息]"
+
+
+async def send_line_push(
+    line_user_id: str,
+    messages: list,
+    sender_name: str = "用戶",
+    log_to_brain_enabled: bool = True
+) -> Dict[str, Any]:
+    """
+    發送 LINE Push Message（並同步到 Brain）
 
     Args:
         line_user_id: LINE User ID
         messages: 訊息內容列表
+        sender_name: 發送對象名稱（用於記錄）
+        log_to_brain_enabled: 是否同步到 Brain
 
     Returns:
         發送結果
     """
+    from datetime import datetime
+
+    # 記錄發送時間（用於 Brain 同步）
+    send_timestamp = datetime.utcnow().isoformat() + "Z"
+
     if not LINE_CHANNEL_ACCESS_TOKEN:
         logger.warning("LINE_CHANNEL_ACCESS_TOKEN not configured")
         return {
@@ -64,6 +161,21 @@ async def send_line_push(line_user_id: str, messages: list) -> Dict[str, Any]:
             )
 
             if response.status_code == 200:
+                # 發送成功後，同步到 Brain（背景執行）
+                if log_to_brain_enabled and BRAIN_API_URL:
+                    content = extract_message_content(messages)
+                    # 使用 asyncio.create_task 背景執行，不阻塞
+                    import asyncio
+                    asyncio.create_task(
+                        log_to_brain(
+                            sender_id=line_user_id,
+                            sender_name=sender_name,
+                            content=content,
+                            message_type="bot_reply",
+                            timestamp=send_timestamp
+                        )
+                    )
+
                 return {"success": True}
             else:
                 logger.error(f"LINE API error: {response.status_code} - {response.text}")

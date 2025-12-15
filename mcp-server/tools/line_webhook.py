@@ -16,7 +16,7 @@ from urllib.parse import parse_qs
 import httpx
 import redis.asyncio as redis
 
-from .line_tools import send_line_push
+from .line_tools import send_line_push, log_to_brain
 from .booking_tools import (
     booking_list_rooms,
     booking_check_availability,
@@ -564,30 +564,73 @@ async def handle_line_event(event: Dict) -> Dict[str, Any]:
 
 async def handle_message_event(event: Dict) -> Dict[str, Any]:
     """處理訊息事件"""
+    import asyncio
+
     message = event.get("message", {})
     message_type = message.get("type")
     line_user_id = event["source"]["userId"]
+    action_timestamp = datetime.utcnow().isoformat() + "Z"
 
     if message_type != "text":
         return {"handled": False}
 
     text = message.get("text", "").strip()
 
+    # 檢查是否在對話流程中（用於取得用戶名稱）
+    state = await get_user_state(line_user_id)
+    customer_name = state.get("customer_name", "用戶") if state else "用戶"
+
     # 指令處理
     if text in ["預約", "預約會議室", "book", "booking"]:
+        # 記錄用戶開始預約
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"輸入指令：{text}（開始預約流程）",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
         return await start_booking_flow(line_user_id)
     elif text in ["我的預約", "查詢預約", "mybooking", "查詢"]:
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"輸入指令：{text}（查詢預約）",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
         return await show_my_bookings(line_user_id)
     elif text in ["取消預約", "取消"]:
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"輸入指令：{text}（取消預約）",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
         return await show_cancel_options(line_user_id)
     elif text in ["幫助", "help", "？", "?"]:
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"輸入指令：{text}（查看幫助）",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
         return await send_help_message(line_user_id)
 
     # 檢查是否在對話流程中
-    state = await get_user_state(line_user_id)
     if state:
         # 可能是輸入目的等文字內容
         if state.get("awaiting_purpose"):
+            # 記錄用戶輸入的會議目的
+            asyncio.create_task(log_to_brain(
+                sender_id=line_user_id,
+                sender_name=customer_name,
+                content=f"輸入會議目的：{text}",
+                message_type="user_action",
+                timestamp=action_timestamp
+            ))
             state["purpose"] = text
             state["awaiting_purpose"] = False
             await set_user_state(line_user_id, state)
@@ -599,25 +642,54 @@ async def handle_message_event(event: Dict) -> Dict[str, Any]:
 
 async def handle_postback_event(event: Dict) -> Dict[str, Any]:
     """處理 Postback 事件"""
+    import asyncio
+
     line_user_id = event["source"]["userId"]
     data = event.get("postback", {}).get("data", "")
+    action_timestamp = datetime.utcnow().isoformat() + "Z"
 
     # 解析 postback data
     params = dict(parse_qs(data))
     action = params.get("action", [""])[0]
     step = params.get("step", [""])[0]
 
+    # 取得用戶名稱（從 state 或查詢客戶資料）
+    state = await get_user_state(line_user_id)
+    customer_name = state.get("customer_name", "用戶") if state else "用戶"
+
     if action == "book":
         return await handle_booking_postback(line_user_id, step, params)
     elif action == "cancel":
         booking_id = params.get("booking_id", [None])[0]
         if booking_id:
+            # 記錄用戶取消預約操作
+            asyncio.create_task(log_to_brain(
+                sender_id=line_user_id,
+                sender_name=customer_name,
+                content=f"取消預約 (ID: {booking_id})",
+                message_type="user_action",
+                timestamp=action_timestamp
+            ))
             return await cancel_booking(line_user_id, int(booking_id))
     elif action == "list":
-        # 查看我的預約
+        # 記錄用戶查看預約操作
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content="查看我的預約",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
         return await show_my_bookings(line_user_id)
     elif action == "start":
-        # 重新開始預約流程
+        # 記錄用戶重新開始預約操作
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content="開始新的會議室預約",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
         return await start_booking_flow(line_user_id)
 
     return {"handled": False}
@@ -705,6 +777,9 @@ async def start_booking_flow(line_user_id: str) -> Dict[str, Any]:
 
 async def handle_booking_postback(line_user_id: str, step: str, params: Dict) -> Dict[str, Any]:
     """處理預約流程 Postback"""
+    import asyncio
+    from .booking_tools import postgrest_get
+
     state = await get_user_state(line_user_id)
     if not state:
         await send_line_push(line_user_id, [{
@@ -713,12 +788,27 @@ async def handle_booking_postback(line_user_id: str, step: str, params: Dict) ->
         }])
         return {"handled": True}
 
+    # 用於記錄到 Brain 的用戶名稱
+    customer_name = state.get("customer_name", "用戶")
+    action_timestamp = datetime.utcnow().isoformat() + "Z"
+
     if step == "room":
         # 選擇了會議室
         room_id = int(params.get("room_id", [0])[0])
         state["room_id"] = room_id
         state["step"] = "select_date"
         await set_user_state(line_user_id, state)
+
+        # 記錄用戶操作到 Brain（取得會議室名稱）
+        rooms = await postgrest_get("meeting_rooms", {"id": f"eq.{room_id}"})
+        room_name = rooms[0]["name"] if rooms else f"會議室{room_id}"
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"選擇會議室：{room_name}",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
 
         # 發送日期選擇
         flex_message = create_date_selection_flex()
@@ -730,6 +820,15 @@ async def handle_booking_postback(line_user_id: str, step: str, params: Dict) ->
         state["date"] = selected_date
         state["step"] = "select_time"
         await set_user_state(line_user_id, state)
+
+        # 記錄用戶操作到 Brain
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"選擇日期：{selected_date}",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
 
         # 查詢可用時段
         availability = await booking_check_availability(state["room_id"], selected_date)
@@ -754,6 +853,15 @@ async def handle_booking_postback(line_user_id: str, step: str, params: Dict) ->
         state["step"] = "select_duration"
         await set_user_state(line_user_id, state)
 
+        # 記錄用戶操作到 Brain
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"選擇開始時間：{start_time}",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
+
         # 發送時長選擇
         flex_message = create_duration_selection_flex(start_time)
         await send_line_push(line_user_id, [flex_message])
@@ -765,6 +873,15 @@ async def handle_booking_postback(line_user_id: str, step: str, params: Dict) ->
         state["step"] = "confirm"
         await set_user_state(line_user_id, state)
 
+        # 記錄用戶操作到 Brain
+        asyncio.create_task(log_to_brain(
+            sender_id=line_user_id,
+            sender_name=customer_name,
+            content=f"選擇結束時間：{end_time}（{state.get('date')} {state.get('start_time')}-{end_time}）",
+            message_type="user_action",
+            timestamp=action_timestamp
+        ))
+
         # 顯示確認畫面
         return await show_confirm_booking(line_user_id, state)
 
@@ -772,8 +889,24 @@ async def handle_booking_postback(line_user_id: str, step: str, params: Dict) ->
         # 確認或取消
         confirm = params.get("confirm", [""])[0]
         if confirm == "yes":
+            # 記錄用戶確認預約
+            asyncio.create_task(log_to_brain(
+                sender_id=line_user_id,
+                sender_name=customer_name,
+                content=f"確認預約會議室（{state.get('date')} {state.get('start_time')}-{state.get('end_time')}）",
+                message_type="user_action",
+                timestamp=action_timestamp
+            ))
             return await execute_booking(line_user_id, state)
         else:
+            # 記錄用戶取消預約
+            asyncio.create_task(log_to_brain(
+                sender_id=line_user_id,
+                sender_name=customer_name,
+                content="取消預約流程",
+                message_type="user_action",
+                timestamp=action_timestamp
+            ))
             await clear_user_state(line_user_id)
             await send_line_push(line_user_id, [{
                 "type": "text",
