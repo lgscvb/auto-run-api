@@ -22,3 +22,15 @@ mcp>=1.0.0
 
 # AI - OpenRouter (OpenAI-compatible)
 openai>=1.0.0
+
+# Google Cloud Auth (for Cloud Run)
+google-auth>=2.23.0
+
+# Google Calendar API
+google-api-python-client>=2.108.0
+
+# Redis (async)
+redis>=5.0.0
+
+# Scheduler
+APScheduler>=3.10.4
