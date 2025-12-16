@@ -208,6 +208,13 @@ from tools.booking_tools import (
     set_postgrest_request as set_booking_postgrest
 )
 
+from tools.floor_plan_tools import (
+    floor_plan_get_positions,
+    floor_plan_update_position,
+    floor_plan_generate,
+    floor_plan_preview_html
+)
+
 from tools.line_webhook import (
     handle_line_event,
     verify_signature
@@ -738,6 +745,40 @@ MCP_TOOLS = {
             "booking_id": {"type": "integer", "description": "預約ID", "required": True}
         },
         "handler": booking_send_reminder
+    },
+
+    # 平面圖工具
+    "floor_plan_get_positions": {
+        "description": "取得場館所有位置的當前租戶狀態",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID（1=大忠本館）", "default": 1}
+        },
+        "handler": floor_plan_get_positions
+    },
+    "floor_plan_update_position": {
+        "description": "更新位置的租戶關聯（設定或清空）",
+        "parameters": {
+            "position_number": {"type": "integer", "description": "位置編號", "required": True},
+            "contract_id": {"type": "integer", "description": "合約ID（null=清空位置）", "optional": True},
+            "branch_id": {"type": "integer", "description": "場館ID", "default": 1}
+        },
+        "handler": floor_plan_update_position
+    },
+    "floor_plan_generate": {
+        "description": "生成場館平面圖 PDF，顯示位置與租戶對照",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID（1=大忠本館）", "default": 1},
+            "output_date": {"type": "string", "description": "輸出日期 YYYYMMDD（預設今天）", "optional": True},
+            "include_table": {"type": "boolean", "description": "是否包含右側租戶表格", "default": True}
+        },
+        "handler": floor_plan_generate
+    },
+    "floor_plan_preview_html": {
+        "description": "預覽平面圖 HTML（不生成 PDF）",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "default": 1}
+        },
+        "handler": floor_plan_preview_html
     }
 }
 

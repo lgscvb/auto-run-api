@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>存證信函</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+            font-size: 12pt;
+            line-height: 1.8;
+            color: #000;
+        }
+
+        .container {
+            border: 2px solid #000;
+            padding: 20px;
+            min-height: 90vh;
+        }
+
+        /* 標題區 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 15px;
+        }
+
+        .title {
+            font-size: 24pt;
+            font-weight: bold;
+            letter-spacing: 10px;
+            margin-bottom: 10px;
+        }
+
+        .letter-number {
+            font-size: 10pt;
+            color: #666;
+        }
+
+        /* 寄件人/收件人資訊 */
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 11pt;
+        }
+
+        .info-box {
+            width: 48%;
+            border: 1px solid #999;
+            padding: 12px 15px;
+            background-color: #fafafa;
+        }
+
+        .info-box h3 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            width: 70px;
+            color: #666;
+        }
+
+        .info-value {
+            flex: 1;
+        }
+
+        /* 主旨 */
+        .subject {
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background-color: #f5f5f5;
+            border-left: 4px solid #333;
+        }
+
+        .subject-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* 正文 */
+        .content {
+            margin-bottom: 30px;
+            text-align: justify;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            min-height: 400px;
+        }
+
+        .content p {
+            margin-bottom: 15px;
+            text-indent: 2em;
+        }
+
+        /* 欠款資訊摘要 */
+        .debt-summary {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .debt-summary h4 {
+            font-size: 12pt;
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .debt-table {
+            width: 100%;
+        }
+
+        .debt-table td {
+            padding: 5px 10px;
+        }
+
+        .debt-table td:first-child {
+            width: 120px;
+            color: #666;
+        }
+
+        .debt-table .amount {
+            font-weight: bold;
+            color: #c00;
+            font-size: 14pt;
+        }
+
+        /* 簽名區 */
+        .signature-section {
+            margin-top: 40px;
+            text-align: right;
+            padding-right: 50px;
+        }
+
+        .signature-date {
+            margin-bottom: 30px;
+        }
+
+        .signature-name {
+            font-size: 14pt;
+            font-weight: bold;
+        }
+
+        .signature-title {
+            font-size: 11pt;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 頁尾 */
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ccc;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .footer-note {
+            margin-bottom: 5px;
+        }
+
+        /* 郵局使用區 */
+        .postal-section {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px dashed #999;
+            background-color: #f9f9f9;
+        }
+
+        .postal-section h4 {
+            font-size: 10pt;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .postal-grid {
+            display: flex;
+            gap: 20px;
+        }
+
+        .postal-item {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            min-height: 60px;
+        }
+
+        .postal-item label {
+            font-size: 9pt;
+            color: #666;
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 標題 -->
+        <div class="header">
+            <h1 class="title">存　證　信　函</h1>
+            <div class="letter-number">編號：{{ letter_number }}</div>
+        </div>
+
+        <!-- 寄收件人資訊 -->
+        <div class="info-section">
+            <div class="info-box">
+                <h3>寄件人</h3>
+                <div class="info-row">
+                    <span class="info-label">名　稱：</span>
+                    <span class="info-value">{{ sender_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">地　址：</span>
+                    <span class="info-value">{{ sender_address }}</span>
+                </div>
+            </div>
+            <div class="info-box">
+                <h3>收件人</h3>
+                <div class="info-row">
+                    <span class="info-label">名　稱：</span>
+                    <span class="info-value">{{ recipient_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">地　址：</span>
+                    <span class="info-value">{{ recipient_address }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主旨 -->
+        <div class="subject">
+            <span class="subject-label">主旨：</span>
+            <span>催繳逾期租金暨終止租約前最後通知</span>
+        </div>
+
+        <!-- 欠款摘要 -->
+        <div class="debt-summary">
+            <h4>欠款資訊</h4>
+            <table class="debt-table">
+                <tr>
+                    <td>合約編號：</td>
+                    <td>{{ contract_number or '—' }}</td>
+                </tr>
+                <tr>
+                    <td>逾期金額：</td>
+                    <td class="amount">新台幣 {{ overdue_amount_formatted }} 元整</td>
+                </tr>
+                <tr>
+                    <td>逾期天數：</td>
+                    <td>{{ overdue_days }} 天</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 正文 -->
+        <div class="content">
+            {{ content | replace('\n', '<br>') | safe }}
+        </div>
+
+        <!-- 簽名區 -->
+        <div class="signature-section">
+            <div class="signature-date">
+                中華民國 {{ today_roc_year }} 年 {{ today_month }} 月 {{ today_day }} 日
+            </div>
+            <div class="signature-name">{{ sender_name }}</div>
+            <div class="signature-title">Hour Jungle {{ branch_name }}</div>
+        </div>
+
+        <!-- 頁尾說明 -->
+        <div class="footer">
+            <div class="footer-note">※ 本存證信函依中華民國郵政法規定，作為日後訴訟或其他法律程序之證據使用。</div>
+            <div class="footer-note">※ 請於收到本函七日內清償所有欠款，否則本公司將依法採取法律行動。</div>
+            <div class="footer-note">※ 生成時間：{{ generated_at }}</div>
+        </div>
+
+        <!-- 郵局使用區（列印後手填） -->
+        <div class="postal-section">
+            <h4>郵局存證信函用（掛號寄出後填寫）</h4>
+            <div class="postal-grid">
+                <div class="postal-item">
+                    <label>寄出日期</label>
+                </div>
+                <div class="postal-item">
+                    <label>掛號號碼</label>
+                </div>
+                <div class="postal-item">
+                    <label>收件確認</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

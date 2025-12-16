@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>共同工作室租賃契約 - {{ contract_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm 2.5cm;
+        }
+        body {
+            font-family: "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+            font-size: 11pt;
+            line-height: 1.8;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0;
+            letter-spacing: 8px;
+        }
+        .contract-number {
+            text-align: right;
+            font-size: 10pt;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .parties {
+            margin-bottom: 25px;
+        }
+        .party-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        .party-label {
+            width: 80px;
+            font-weight: bold;
+        }
+        .party-value {
+            flex: 1;
+        }
+        .article {
+            margin-bottom: 20px;
+        }
+        .article-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .article-content {
+            text-indent: 2em;
+            text-align: justify;
+        }
+        .article-content p {
+            margin: 5px 0;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .info-table th,
+        .info-table td {
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .info-table th {
+            background: #f5f5f5;
+            width: 120px;
+            font-weight: normal;
+        }
+        .signature-area {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .signature-box {
+            width: 45%;
+        }
+        .signature-box p {
+            margin: 8px 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            min-height: 25px;
+        }
+        .signature-box .label {
+            border-bottom: none;
+            font-weight: bold;
+        }
+        .date-line {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12pt;
+        }
+        .terms-list {
+            padding-left: 0;
+            list-style: none;
+        }
+        .terms-list li {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .terms-list li::before {
+            content: none;
+        }
+        .sub-list {
+            padding-left: 2em;
+            margin-top: 5px;
+        }
+        .highlight {
+            font-weight: bold;
+        }
+        .underline {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>共同工作室租賃契約</h1>
+    </div>
+
+    <div class="contract-number">
+        合約編號：{{ contract_number }}
+    </div>
+
+    <div class="parties">
+        <div class="party-row">
+            <span class="party-label">出租人：</span>
+            <span class="party-value">{{ branch_name }}（以下簡稱甲方）</span>
+        </div>
+        <div class="party-row">
+            <span class="party-label">承租人：</span>
+            <span class="party-value">{{ company_name or customer_name }}（以下簡稱乙方）</span>
+        </div>
+    </div>
+
+    <p style="text-indent: 2em;">
+        甲乙雙方同意依下列條款訂立本租賃契約：
+    </p>
+
+    <div class="article">
+        <div class="article-title">第一條（租賃標的）</div>
+        <div class="article-content">
+            <p>甲方同意將座落於 <span class="underline">{{ branch_address }}</span> 之共同工作空間出租予乙方使用。</p>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第二條（租賃期限）</div>
+        <div class="article-content">
+            <p>租賃期間自 <span class="highlight">{{ start_date_formatted }}</span> 起至 <span class="highlight">{{ end_date_formatted }}</span> 止，共計 <span class="highlight">{{ periods }}</span> 個月。</p>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第三條（租金及付款方式）</div>
+        <div class="article-content">
+            <table class="info-table">
+                <tr>
+                    <th>服務類型</th>
+                    <td>{{ contract_type_name }}</td>
+                </tr>
+                <tr>
+                    <th>月租金定價</th>
+                    <td>新台幣 {{ list_price_formatted }} 元整</td>
+                </tr>
+                <tr>
+                    <th>優惠後月租</th>
+                    <td>新台幣 {{ monthly_fee_formatted }} 元整</td>
+                </tr>
+                <tr>
+                    <th>繳款日</th>
+                    <td>每月 {{ payment_day }} 日前</td>
+                </tr>
+                <tr>
+                    <th>履約保證金</th>
+                    <td>新台幣 {{ deposit_formatted }} 元整</td>
+                </tr>
+            </table>
+            <p>乙方應於每月 {{ payment_day }} 日前繳納當月租金，逾期未繳納者，甲方得依約收取滯納金。</p>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第四條（履約保證金）</div>
+        <div class="article-content">
+            <p>乙方應於簽約時繳納履約保證金新台幣 {{ deposit_formatted }} 元整，於租賃期滿並完成點交後無息退還。如乙方有違約情事或積欠租金，甲方得自保證金中扣抵。</p>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第五條（使用規定）</div>
+        <div class="article-content">
+            <ol class="terms-list">
+                <li>一、乙方應遵守甲方訂定之共同工作空間使用規則。</li>
+                <li>二、乙方不得將租賃標的全部或一部轉租、出借或以其他方式供他人使用。</li>
+                <li>三、乙方應維護公共區域之整潔，並不得有影響其他承租人權益之行為。</li>
+                <li>四、乙方不得於租賃標的內從事違法行為或存放危險物品。</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第六條（提前終止）</div>
+        <div class="article-content">
+            <p>任一方如欲提前終止本契約，應於一個月前以書面通知他方。乙方提前終止者，甲方得沒收已繳納之履約保證金。</p>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第七條（契約之續約）</div>
+        <div class="article-content">
+            <p>租賃期滿如欲續約，乙方應於期滿一個月前向甲方提出申請，經甲方同意後另訂新約。</p>
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第八條（其他約定事項）</div>
+        <div class="article-content">
+            {% if notes %}
+            <p>{{ notes }}</p>
+            {% else %}
+            <p>無。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="article">
+        <div class="article-title">第九條（管轄法院）</div>
+        <div class="article-content">
+            <p>本契約如有爭議，雙方同意以台灣台北地方法院為第一審管轄法院。</p>
+        </div>
+    </div>
+
+    <p style="margin-top: 30px;">
+        本契約一式貳份，由甲乙雙方各執乙份為憑。
+    </p>
+
+    <div class="signature-area">
+        <div class="signature-row">
+            <div class="signature-box">
+                <p class="label">甲方（出租人）</p>
+                <p>公司名稱：{{ branch_name }}</p>
+                <p>地址：{{ branch_address }}</p>
+                <p>電話：{{ branch_phone }}</p>
+                <p>負責人：</p>
+                <p>簽章：</p>
+            </div>
+            <div class="signature-box">
+                <p class="label">乙方（承租人）</p>
+                <p>公司/姓名：{{ company_name or customer_name }}</p>
+                <p>統一編號：{{ tax_id }}</p>
+                <p>身分證號：{{ id_number }}</p>
+                <p>地址：{{ company_address }}</p>
+                <p>電話：{{ contact_phone }}</p>
+                <p>Email：{{ contact_email }}</p>
+                <p>負責人：{{ customer_name }}</p>
+                <p>簽章：</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="date-line">
+        中　華　民　國　{{ today_roc_year }}　年　{{ today_month }}　月　{{ today_day }}　日
+    </div>
+</body>
+</html>

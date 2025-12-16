@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>HourJungle 報價單</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .logo-text {
+            font-size: 14pt;
+            color: #2d5a27;
+            letter-spacing: 2px;
+        }
+
+        .title {
+            font-size: 28pt;
+            font-weight: bold;
+            color: #2d5a27;
+            margin-top: 15px;
+        }
+
+        .quote-info {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: 10pt;
+            color: #666;
+        }
+
+        /* 服務項目表格 */
+        .service-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+
+        .service-table th {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .service-table td {
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+        }
+
+        .service-table .section-header {
+            background-color: #fafafa;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+        }
+
+        .service-table .item-name {
+            text-align: left;
+        }
+
+        .service-table .item-amount {
+            text-align: right;
+            font-family: monospace;
+        }
+
+        .service-table .total-row td {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+
+        .service-table .total-row .total-label {
+            text-align: center;
+            color: #2d5a27;
+            font-size: 14pt;
+        }
+
+        .service-table .total-row .total-amount {
+            text-align: right;
+            color: #2d5a27;
+            font-size: 14pt;
+        }
+
+        /* 銀行資訊 */
+        .bank-info {
+            margin-bottom: 25px;
+        }
+
+        .bank-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bank-info td {
+            padding: 8px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .bank-info td:first-child {
+            width: 100px;
+            color: #666;
+            background-color: #fafafa;
+        }
+
+        .bank-info td:last-child {
+            text-align: right;
+        }
+
+        /* 備註區 */
+        .notes {
+            background-color: #fafafa;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-size: 10pt;
+            line-height: 1.8;
+        }
+
+        .notes-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .notes ol {
+            margin-left: 20px;
+        }
+
+        .notes li {
+            margin-bottom: 5px;
+        }
+
+        .notes a {
+            color: #2d5a27;
+        }
+
+        /* 頁尾提醒 */
+        .footer-note {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 10pt;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <!-- Logo SVG -->
+        <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="45" fill="#2d5a27"/>
+            <text x="50" y="55" text-anchor="middle" fill="white" font-size="24" font-weight="bold">HJ</text>
+        </svg>
+        <div class="logo-text">HOUR JUNGLE</div>
+        <h1 class="title">HourJungle {{ branch_name }}報價單</h1>
+    </div>
+
+    <div class="quote-info">
+        <p>報價單號：{{ quote_number }}</p>
+        <p>報價日期：{{ quote_date }}</p>
+        <p>有效期限：{{ valid_until }}</p>
+    </div>
+
+    <!-- 服務項目表格 -->
+    <table class="service-table">
+        <thead>
+            <tr>
+                <th style="width: 70%;">服務項目</th>
+                <th style="width: 30%;">請款金額 (NTD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if section_title %}
+            <tr>
+                <td colspan="2" class="section-header">{{ section_title }}</td>
+            </tr>
+            {% endif %}
+
+            {% for item in items %}
+            <tr>
+                <td class="item-name">{{ item.name }}</td>
+                <td class="item-amount">{{ "{:,.0f}".format(item.amount) }}</td>
+            </tr>
+            {% endfor %}
+
+            {% if deposit_amount > 0 %}
+            <tr>
+                <td class="item-name">押金</td>
+                <td class="item-amount">{{ "{:,.0f}".format(deposit_amount) }}</td>
+            </tr>
+            {% endif %}
+
+            <tr class="total-row">
+                <td class="total-label">合計</td>
+                <td class="total-amount">{{ "{:,.0f}".format(total_amount) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 銀行資訊 -->
+    <div class="bank-info">
+        <table>
+            <tr>
+                <td>帳戶名稱：</td>
+                <td>{{ bank_account_name }}</td>
+            </tr>
+            <tr>
+                <td>銀行名稱：</td>
+                <td>{{ bank_name }}</td>
+            </tr>
+            <tr>
+                <td>行庫代號：</td>
+                <td>{{ bank_code }}</td>
+            </tr>
+            <tr>
+                <td>帳號：</td>
+                <td>{{ bank_account_number }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 備註 -->
+    <div class="notes">
+        <div class="notes-title">備註：</div>
+        <ol>
+            <li>報價有效期間：即日起30天內。</li>
+            <li>獨家！威立方（V-CUBE）集團，指定合作夥伴Ｅ樂堂企業內訓系統會員免費獨享。</li>
+            <li>超過百間以上蝦皮店家登記指定選擇hourjungle，可登記使用免用統一發票（限無店面零售業）電商最划算的選擇。</li>
+            <li>全台灣唯一敢在合約內註明如因我方因素主管機關不予核准，我們全額退費！</li>
+            <li>多位知名客戶阿里巴巴、UBER、唐吉軻德、arrow（全球五百大企業）指定選擇解決方案。</li>
+            <li>獨家！蝦皮商城免費健檢！提供金、物流、包材、bsmi、財稅法一站式解決方案。再送一年免費稅務諮詢。</li>
+            <li>獨家！勞動部ＴＴＱＳ認證單位，不定期超過百種創業課程會員免費獨享。</li>
+            <li>獨家經濟部中小企業處認證國際育成中心！</li>
+            <li>獨家！國科會科研平台輔導業師進駐。</li>
+            <li>有任何問題請洽詢公司信箱 <a href="mailto:{{ contact_email }}">{{ contact_email }}</a> 或電話 {{ contact_phone }}。</li>
+        </ol>
+    </div>
+
+    <div class="footer-note">
+        本公司之報價不包含銀行匯款手續費，匯款後請閣下將匯款憑證回傳本公司，以便進行確認。
+    </div>
+</body>
+</html>
