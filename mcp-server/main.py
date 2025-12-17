@@ -131,6 +131,8 @@ from tools.crm_tools import (
     update_customer,
     record_payment,
     create_contract,
+    contract_renew,
+    contract_update_tax_id,
     commission_pay,
     payment_undo
 )
@@ -301,16 +303,46 @@ MCP_TOOLS = {
         "handler": payment_undo
     },
     "crm_create_contract": {
-        "description": "建立新合約",
+        "description": "建立新合約（以合約為主體架構）。觸發器會根據統編或電話自動查找/建立客戶",
         "parameters": {
-            "customer_id": {"type": "integer", "description": "客戶ID", "required": True},
             "branch_id": {"type": "integer", "description": "場館ID", "required": True},
             "start_date": {"type": "string", "description": "開始日期 (YYYY-MM-DD)", "required": True},
             "end_date": {"type": "string", "description": "結束日期 (YYYY-MM-DD)", "required": True},
             "monthly_rent": {"type": "number", "description": "月租金", "required": True},
-            "contract_type": {"type": "string", "description": "合約類型", "default": "virtual_office"}
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "representative_name": {"type": "string", "description": "負責人姓名", "optional": True},
+            "representative_address": {"type": "string", "description": "負責人地址", "optional": True},
+            "id_number": {"type": "string", "description": "身分證/居留證號碼", "optional": True},
+            "company_tax_id": {"type": "string", "description": "公司統編（可為空）", "optional": True},
+            "phone": {"type": "string", "description": "聯絡電話", "optional": True},
+            "email": {"type": "string", "description": "電子郵件", "optional": True},
+            "customer_id": {"type": "integer", "description": "客戶ID（可選，不填則自動處理）", "optional": True},
+            "contract_type": {"type": "string", "description": "合約類型", "default": "virtual_office"},
+            "deposit_amount": {"type": "number", "description": "押金", "default": 0},
+            "original_price": {"type": "number", "description": "定價（原價）", "optional": True}
         },
         "handler": create_contract
+    },
+    "contract_renew": {
+        "description": "續約：將舊合約標記為「已續約」，建立新合約",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "舊合約ID", "required": True},
+            "new_start_date": {"type": "string", "description": "新合約開始日期 (YYYY-MM-DD)", "required": True},
+            "new_end_date": {"type": "string", "description": "新合約結束日期 (YYYY-MM-DD)", "required": True},
+            "new_monthly_rent": {"type": "number", "description": "新月租金（不填則沿用）", "optional": True},
+            "new_deposit_amount": {"type": "number", "description": "新押金（不填則沿用）", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True}
+        },
+        "handler": contract_renew
+    },
+    "contract_update_tax_id": {
+        "description": "補上公司統編（新設立公司後續補上）",
+        "parameters": {
+            "contract_id": {"type": "integer", "description": "合約ID", "required": True},
+            "company_tax_id": {"type": "string", "description": "公司統編（8碼）", "required": True},
+            "update_customer": {"type": "boolean", "description": "是否同時更新客戶表", "default": True}
+        },
+        "handler": contract_update_tax_id
     },
 
     # LINE 通知工具
@@ -486,11 +518,23 @@ MCP_TOOLS = {
         "handler": delete_quote
     },
     "quote_convert_to_contract": {
-        "description": "將已接受的報價單轉換為合約草稿",
+        "description": "將已接受的報價單轉換為合約草稿。前端需重新填寫完整客戶資訊",
         "parameters": {
             "quote_id": {"type": "integer", "description": "報價單ID", "required": True},
             "start_date": {"type": "string", "description": "合約開始日期 (YYYY-MM-DD)", "optional": True},
+            "end_date": {"type": "string", "description": "合約結束日期 (YYYY-MM-DD)", "optional": True},
             "payment_cycle": {"type": "string", "description": "繳費週期 (monthly/quarterly/semi_annual/annual)", "optional": True},
+            "payment_day": {"type": "integer", "description": "每期繳費日（1-28）", "default": 5},
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "representative_name": {"type": "string", "description": "負責人姓名", "optional": True},
+            "representative_address": {"type": "string", "description": "負責人地址", "optional": True},
+            "id_number": {"type": "string", "description": "身分證/居留證號碼", "optional": True},
+            "company_tax_id": {"type": "string", "description": "公司統編（可為空）", "optional": True},
+            "phone": {"type": "string", "description": "聯絡電話", "optional": True},
+            "email": {"type": "string", "description": "電子郵件", "optional": True},
+            "original_price": {"type": "number", "description": "定價（原價）", "optional": True},
+            "monthly_rent": {"type": "number", "description": "折扣後月租金", "optional": True},
+            "deposit_amount": {"type": "number", "description": "押金", "optional": True},
             "notes": {"type": "string", "description": "備註", "optional": True}
         },
         "handler": convert_quote_to_contract

@@ -568,13 +568,23 @@ async def payment_undo(
 
 
 async def create_contract(
-    customer_id: int,
     branch_id: int,
     start_date: str,
     end_date: str,
     monthly_rent: float,
+    # 承租人資訊（新架構：合約為主體）
+    company_name: str = None,
+    representative_name: str = None,
+    representative_address: str = None,
+    id_number: str = None,
+    company_tax_id: str = None,
+    phone: str = None,
+    email: str = None,
+    # 合約資訊
+    customer_id: int = None,  # 可選，觸發器會自動查找/建立
     contract_type: str = "virtual_office",
-    deposit: float = 0,
+    deposit_amount: float = 0,
+    original_price: float = None,
     payment_cycle: str = "monthly",
     payment_day: int = 5,
     plan_name: str = None,
@@ -583,16 +593,26 @@ async def create_contract(
     notes: str = None
 ) -> Dict[str, Any]:
     """
-    建立新合約
+    建立新合約（以合約為主體的架構）
+
+    觸發器會根據 company_tax_id 或 phone 自動查找或建立客戶
 
     Args:
-        customer_id: 客戶ID
         branch_id: 場館ID
         start_date: 開始日期 (YYYY-MM-DD)
         end_date: 結束日期 (YYYY-MM-DD)
         monthly_rent: 月租金
+        company_name: 公司名稱
+        representative_name: 負責人姓名
+        representative_address: 負責人地址
+        id_number: 身分證/居留證號碼
+        company_tax_id: 公司統編（可為空，新設立公司）
+        phone: 聯絡電話
+        email: 電子郵件
+        customer_id: 客戶ID（可選，如不提供則由觸發器處理）
         contract_type: 合約類型
-        deposit: 押金
+        deposit_amount: 押金
+        original_price: 定價（原價）
         payment_cycle: 繳費週期
         payment_day: 繳費日
         plan_name: 方案名稱
@@ -604,18 +624,40 @@ async def create_contract(
         新建合約資料
     """
     data = {
-        "customer_id": customer_id,
         "branch_id": branch_id,
         "start_date": start_date,
         "end_date": end_date,
         "monthly_rent": monthly_rent,
         "contract_type": contract_type,
-        "deposit": deposit,
+        "deposit_amount": deposit_amount,
         "payment_cycle": payment_cycle,
         "payment_day": payment_day,
         "status": "draft"
     }
 
+    # 承租人資訊
+    if company_name:
+        data["company_name"] = company_name
+    if representative_name:
+        data["representative_name"] = representative_name
+    if representative_address:
+        data["representative_address"] = representative_address
+    if id_number:
+        data["id_number"] = id_number
+    if company_tax_id:
+        data["company_tax_id"] = company_tax_id
+    if phone:
+        data["phone"] = phone
+    if email:
+        data["email"] = email
+    if original_price:
+        data["original_price"] = original_price
+
+    # 如果有明確指定 customer_id，使用它（跳過觸發器的自動查找）
+    if customer_id:
+        data["customer_id"] = customer_id
+
+    # 其他欄位
     if plan_name:
         data["plan_name"] = plan_name
     if broker_name:
@@ -638,3 +680,167 @@ async def create_contract(
     except Exception as e:
         logger.error(f"create_contract error: {e}")
         raise Exception(f"建立合約失敗: {e}")
+
+
+async def contract_renew(
+    contract_id: int,
+    new_start_date: str,
+    new_end_date: str,
+    new_monthly_rent: float = None,
+    new_deposit_amount: float = None,
+    notes: str = None
+) -> Dict[str, Any]:
+    """
+    續約：將舊合約標記為「已續約」，建立新合約
+
+    Args:
+        contract_id: 舊合約ID
+        new_start_date: 新合約開始日期
+        new_end_date: 新合約結束日期
+        new_monthly_rent: 新月租金（不填則沿用）
+        new_deposit_amount: 新押金（不填則沿用）
+        notes: 備註
+
+    Returns:
+        續約結果，包含新舊合約資訊
+    """
+    try:
+        # 1. 取得舊合約
+        contracts = await postgrest_get("contracts", {"id": f"eq.{contract_id}"})
+        if not contracts:
+            return {"success": False, "message": "找不到合約"}
+
+        old_contract = contracts[0]
+
+        # 2. 檢查狀態（只有 active 的合約才能續約）
+        if old_contract.get("status") not in ["active", "expired"]:
+            return {
+                "success": False,
+                "message": f"只有生效中或已到期的合約才能續約，目前狀態為 {old_contract.get('status')}"
+            }
+
+        # 3. 建立新合約（複製舊合約的客戶資訊）
+        new_contract_data = {
+            "branch_id": old_contract.get("branch_id"),
+            "customer_id": old_contract.get("customer_id"),
+            "contract_type": old_contract.get("contract_type"),
+            "plan_name": old_contract.get("plan_name"),
+            "start_date": new_start_date,
+            "end_date": new_end_date,
+            "monthly_rent": new_monthly_rent or old_contract.get("monthly_rent"),
+            "original_price": old_contract.get("original_price"),
+            "deposit_amount": new_deposit_amount if new_deposit_amount is not None else old_contract.get("deposit_amount", 0),
+            "payment_cycle": old_contract.get("payment_cycle", "monthly"),
+            "payment_day": old_contract.get("payment_day", 5),
+            "status": "pending",
+            "renewed_from_id": contract_id,
+            # 複製承租人資訊
+            "company_name": old_contract.get("company_name"),
+            "representative_name": old_contract.get("representative_name"),
+            "representative_address": old_contract.get("representative_address"),
+            "id_number": old_contract.get("id_number"),
+            "company_tax_id": old_contract.get("company_tax_id"),
+            "phone": old_contract.get("phone"),
+            "email": old_contract.get("email"),
+        }
+
+        if notes:
+            new_contract_data["notes"] = notes
+        else:
+            new_contract_data["notes"] = f"續約自合約 #{contract_id}"
+
+        # 複製介紹人資訊
+        if old_contract.get("broker_name"):
+            new_contract_data["broker_name"] = old_contract.get("broker_name")
+        if old_contract.get("broker_firm_id"):
+            new_contract_data["broker_firm_id"] = old_contract.get("broker_firm_id")
+            new_contract_data["commission_eligible"] = True
+
+        new_result = await postgrest_post("contracts", new_contract_data)
+        new_contract = new_result[0] if isinstance(new_result, list) else new_result
+
+        # 4. 更新舊合約狀態為「已續約」
+        await postgrest_patch(
+            "contracts",
+            {"id": f"eq.{contract_id}"},
+            {"status": "renewed"}
+        )
+
+        return {
+            "success": True,
+            "message": f"續約成功",
+            "old_contract": {
+                "id": contract_id,
+                "contract_number": old_contract.get("contract_number"),
+                "status": "renewed"
+            },
+            "new_contract": {
+                "id": new_contract["id"],
+                "contract_number": new_contract.get("contract_number"),
+                "start_date": new_start_date,
+                "end_date": new_end_date,
+                "monthly_rent": new_contract.get("monthly_rent"),
+                "status": "pending"
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"contract_renew error: {e}")
+        raise Exception(f"續約失敗: {e}")
+
+
+async def contract_update_tax_id(
+    contract_id: int,
+    company_tax_id: str,
+    update_customer: bool = True
+) -> Dict[str, Any]:
+    """
+    補上公司統編（新設立公司後續補上）
+
+    Args:
+        contract_id: 合約ID
+        company_tax_id: 公司統編
+        update_customer: 是否同時更新客戶表（預設是）
+
+    Returns:
+        更新結果
+    """
+    if not company_tax_id or len(company_tax_id) != 8:
+        return {"success": False, "message": "統編格式錯誤，應為8碼"}
+
+    try:
+        # 1. 取得合約
+        contracts = await postgrest_get("contracts", {"id": f"eq.{contract_id}"})
+        if not contracts:
+            return {"success": False, "message": "找不到合約"}
+
+        contract = contracts[0]
+
+        # 2. 更新合約的統編
+        await postgrest_patch(
+            "contracts",
+            {"id": f"eq.{contract_id}"},
+            {"company_tax_id": company_tax_id}
+        )
+
+        # 3. 同時更新客戶表
+        customer_updated = False
+        if update_customer and contract.get("customer_id"):
+            await postgrest_patch(
+                "customers",
+                {"id": f"eq.{contract['customer_id']}"},
+                {"company_tax_id": company_tax_id}
+            )
+            customer_updated = True
+
+        return {
+            "success": True,
+            "message": f"統編已更新為 {company_tax_id}",
+            "contract_id": contract_id,
+            "customer_updated": customer_updated,
+            "note": "請重新產生合約 PDF 以包含新統編"
+        }
+
+    except Exception as e:
+        logger.error(f"contract_update_tax_id error: {e}")
+        raise Exception(f"更新統編失敗: {e}")

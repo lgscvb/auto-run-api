@@ -409,17 +409,48 @@ async def delete_quote(quote_id: int) -> Dict[str, Any]:
 
 async def convert_quote_to_contract(
     quote_id: int,
+    # 合約基本資訊
     start_date: str = None,
+    end_date: str = None,
     payment_cycle: str = "monthly",
+    payment_day: int = 5,
+    # 承租人資訊（前端重新填寫）
+    company_name: str = None,
+    representative_name: str = None,
+    representative_address: str = None,
+    id_number: str = None,
+    company_tax_id: str = None,
+    phone: str = None,
+    email: str = None,
+    # 金額資訊
+    original_price: float = None,
+    monthly_rent: float = None,
+    deposit_amount: float = None,
+    # 其他
     notes: str = None
 ) -> Dict[str, Any]:
     """
     將已接受的報價單轉換為合約草稿
 
+    業務流程：報價單 → 合約時，前端重新填寫完整客戶資訊
+    因為報價階段客戶通常不會提供完整資訊
+
     Args:
         quote_id: 報價單ID
-        start_date: 合約開始日期 (預設使用報價單的 proposed_start_date 或今天)
+        start_date: 合約開始日期
+        end_date: 合約結束日期
         payment_cycle: 繳費週期 (monthly/quarterly/semi_annual/annual)
+        payment_day: 每期繳費日（1-28）
+        company_name: 公司名稱
+        representative_name: 負責人姓名
+        representative_address: 負責人地址
+        id_number: 身分證/居留證號碼
+        company_tax_id: 公司統編（可為空，新設立公司）
+        phone: 聯絡電話
+        email: 電子郵件
+        original_price: 定價（原價，用於違約金計算）
+        monthly_rent: 折扣後月租金
+        deposit_amount: 押金
         notes: 備註
 
     Returns:
@@ -447,58 +478,65 @@ async def convert_quote_to_contract(
                 "message": f"此報價單已轉換過，合約 ID: {quote.get('converted_contract_id')}"
             }
 
-        # 4. 準備客戶資料
-        customer_id = quote.get("customer_id")
-
-        # 如果沒有 customer_id，需要先建立客戶
-        if not customer_id:
-            customer_data = {
-                "name": quote.get("customer_name"),
-                "phone": quote.get("customer_phone"),
-                "email": quote.get("customer_email"),
-                "company_name": quote.get("company_name"),
-                "branch_id": quote.get("branch_id"),
-                "status": "active",
-                "source": "quote"
-            }
-            customer_result = await postgrest_post("customers", customer_data)
-            customer = customer_result[0] if isinstance(customer_result, list) else customer_result
-            customer_id = customer["id"]
-            logger.info(f"Created customer {customer_id} from quote {quote_id}")
-
-        # 5. 計算合約日期
+        # 4. 計算合約日期
         contract_start = start_date or quote.get("proposed_start_date") or date.today().isoformat()
         contract_months = quote.get("contract_months", 12)
 
-        # 計算結束日期
-        start_dt = datetime.fromisoformat(contract_start)
-        end_dt = start_dt + timedelta(days=contract_months * 30)  # 簡易計算
-        contract_end = end_dt.strftime("%Y-%m-%d")
+        # 計算結束日期（如果沒有提供）
+        if not end_date:
+            start_dt = datetime.fromisoformat(contract_start)
+            end_dt = start_dt + timedelta(days=contract_months * 30)
+            contract_end = end_dt.strftime("%Y-%m-%d")
+        else:
+            contract_end = end_date
 
-        # 6. 計算月租金（從費用項目或總金額推算）
-        total_amount = quote.get("total_amount", 0)
-        monthly_rent = round(total_amount / contract_months) if contract_months > 0 else total_amount
+        # 5. 計算金額（使用提供的值或從報價單推算）
+        if monthly_rent is None:
+            total_amount = quote.get("total_amount", 0)
+            monthly_rent = round(total_amount / contract_months) if contract_months > 0 else total_amount
 
-        # 7. 建立合約（草稿狀態）
+        if deposit_amount is None:
+            deposit_amount = quote.get("deposit_amount", 0)
+
+        # 6. 建立合約（草稿狀態）
+        # 注意：不傳 customer_id，讓觸發器根據統編/電話自動查找或建立
         contract_data = {
             "branch_id": quote.get("branch_id"),
-            "customer_id": customer_id,
             "contract_type": quote.get("contract_type", "virtual_office"),
             "plan_name": quote.get("plan_name"),
             "start_date": contract_start,
             "end_date": contract_end,
             "monthly_rent": monthly_rent,
             "payment_cycle": payment_cycle,
-            "deposit_amount": quote.get("deposit_amount", 0),
-            "status": "pending",  # 草稿狀態，待確認後才生效
-            "notes": notes or f"從報價單 {quote.get('quote_number')} 轉換",
-            "quote_id": quote_id
+            "payment_day": payment_day,
+            "deposit_amount": deposit_amount,
+            "status": "pending",
+            "quote_id": quote_id,
+            # 承租人資訊（存入合約表，觸發器會自動建立/關聯客戶）
+            "company_name": company_name or quote.get("company_name"),
+            "representative_name": representative_name or quote.get("customer_name"),
+            "phone": phone or quote.get("customer_phone"),
+            "email": email or quote.get("customer_email"),
         }
+
+        # 可選欄位
+        if representative_address:
+            contract_data["representative_address"] = representative_address
+        if id_number:
+            contract_data["id_number"] = id_number
+        if company_tax_id:
+            contract_data["company_tax_id"] = company_tax_id
+        if original_price:
+            contract_data["original_price"] = original_price
+        if notes:
+            contract_data["notes"] = notes
+        else:
+            contract_data["notes"] = f"從報價單 {quote.get('quote_number')} 轉換"
 
         contract_result = await postgrest_post("contracts", contract_data)
         contract = contract_result[0] if isinstance(contract_result, list) else contract_result
 
-        # 8. 更新報價單狀態為已轉換
+        # 7. 更新報價單狀態為已轉換
         await postgrest_patch(
             "quotes",
             {"id": f"eq.{quote_id}"},
@@ -515,10 +553,13 @@ async def convert_quote_to_contract(
             "contract": {
                 "id": contract["id"],
                 "contract_number": contract.get("contract_number"),
-                "customer_id": customer_id,
+                "customer_id": contract.get("customer_id"),  # 觸發器自動填入
+                "company_name": contract.get("company_name"),
+                "representative_name": contract.get("representative_name"),
                 "start_date": contract_start,
                 "end_date": contract_end,
                 "monthly_rent": monthly_rent,
+                "deposit_amount": deposit_amount,
                 "status": "pending"
             },
             "quote_number": quote.get("quote_number")
