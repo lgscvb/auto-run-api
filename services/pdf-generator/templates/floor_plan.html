@@ -260,24 +260,37 @@
                 </div>
 
                 <div class="tenant-table-wrapper">
-                    <div class="tenant-table-header">租戶名冊</div>
-                    <table class="tenant-table">
+                    <div class="tenant-table-header">租戶名冊（國稅局備查）</div>
+                    <table class="tenant-table dual-column">
                         <thead>
                             <tr>
-                                <th style="width: 30px;">位置</th>
-                                <th style="width: 60px;">聯絡人</th>
-                                <th>公司名稱</th>
+                                <th style="width: 25px;">位置</th>
+                                <th style="width: 50px;">負責人</th>
+                                <th style="width: 115px;">公司名稱</th>
+                                <th style="width: 25px;">位置</th>
+                                <th style="width: 50px;">負責人</th>
+                                <th style="width: 115px;">公司名稱</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for pos in positions %}
-                            {% if pos.contract_id %}
+                            {% set occupied_positions = positions | selectattr('contract_id') | list %}
+                            {% for i in range(0, occupied_positions|length, 2) %}
                             <tr>
-                                <td><strong>{{ pos.position_number }}</strong></td>
-                                <td>{{ pos.customer_name or '' }}</td>
-                                <td>{{ pos.company_name or '' }}</td>
+                                {# 左欄 #}
+                                <td><strong>{{ occupied_positions[i].position_number }}</strong></td>
+                                <td>{{ occupied_positions[i].customer_name or '' }}</td>
+                                <td>{{ (occupied_positions[i].company_name or '')[:12] }}{% if occupied_positions[i].company_name and occupied_positions[i].company_name|length > 12 %}…{% endif %}</td>
+                                {# 右欄 #}
+                                {% if i + 1 < occupied_positions|length %}
+                                <td><strong>{{ occupied_positions[i+1].position_number }}</strong></td>
+                                <td>{{ occupied_positions[i+1].customer_name or '' }}</td>
+                                <td>{{ (occupied_positions[i+1].company_name or '')[:12] }}{% if occupied_positions[i+1].company_name and occupied_positions[i+1].company_name|length > 12 %}…{% endif %}</td>
+                                {% else %}
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                {% endif %}
                             </tr>
-                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
