@@ -79,14 +79,14 @@ def get_id_token_for_cloud_run(target_url: str) -> str:
 
 async def contract_generate_pdf(
     contract_id: int,
-    template: str = "contract_coworking"
+    template: str = None
 ) -> Dict[str, Any]:
     """
     生成合約 PDF（呼叫 Cloud Run 服務）
 
     Args:
         contract_id: 合約ID
-        template: 模板名稱
+        template: 模板名稱（可選，會根據合約類型自動選擇）
 
     Returns:
         包含 GCS Signed URL 的結果
@@ -99,13 +99,13 @@ async def contract_generate_pdf(
 
         contract = contracts[0]
 
-        # 取得客戶資料
+        # 取得客戶資料（作為 fallback）
         customer_id = contract.get("customer_id")
         customers = await postgrest_get("customers", {"id": f"eq.{customer_id}"})
         customer = customers[0] if customers else {}
 
         # 取得場館資料
-        branch_id = contract.get("branch_id")
+        branch_id = contract.get("branch_id", 1)
         branches = await postgrest_get("branches", {"id": f"eq.{branch_id}"})
         branch = branches[0] if branches else {}
 
@@ -116,6 +116,42 @@ async def contract_generate_pdf(
     # 2. 準備 Cloud Run 請求資料
     contract_type = contract.get("contract_type", "virtual_office")
 
+    # 自動選擇模板（如果未指定）
+    if not template:
+        template = get_template_for_contract_type(contract_type)
+
+    # 分館法人資訊
+    BRANCH_INFO = {
+        1: {
+            "company_name": "你的空間有限公司",
+            "tax_id": "83772050",
+            "representative": "戴豪廷",
+            "address": "台中市西區大忠南街55號7F-5",
+            "court": "台南地方法院"
+        },
+        2: {
+            "company_name": "樞紐前沿股份有限公司",
+            "tax_id": "60710368",
+            "representative": "戴豪廷",
+            "address": "臺中市西區台灣大道二段181號4樓之1",
+            "court": "台中地方法院"
+        }
+    }
+    branch_info = BRANCH_INFO.get(branch_id, BRANCH_INFO[1])
+
+    # 計算合約月數
+    periods = 12
+    try:
+        if contract.get("start_date") and contract.get("end_date"):
+            from datetime import datetime
+            start = datetime.fromisoformat(str(contract["start_date"]))
+            end = datetime.fromisoformat(str(contract["end_date"]))
+            periods = (end.year - start.year) * 12 + (end.month - start.month) + 1
+            if periods < 1:
+                periods = 12
+    except Exception:
+        pass
+
     contract_data = {
         "contract_id": contract_id,
         "contract_number": contract.get("contract_number") or f"HJ-{contract_id}",
@@ -123,28 +159,34 @@ async def contract_generate_pdf(
         "contract_type_name": get_contract_type_name(contract_type),
         "start_date": contract.get("start_date") or "",
         "end_date": contract.get("end_date") or "",
-        "monthly_fee": float(contract.get("monthly_rent") or 0),
+        "monthly_rent": float(contract.get("monthly_rent") or 0),
         "deposit": float(contract.get("deposit") or 0),
+        "original_price": float(contract.get("original_price") or contract.get("monthly_rent") or 0),
+        "payment_day": contract.get("payment_day") or 8,
+        "periods": periods,
+        "room_number": contract.get("room_number") or "",
         "notes": contract.get("notes") or "",
 
-        # 客戶資訊
-        "customer_name": customer.get("name") or "",
-        "company_name": customer.get("company_name") or "",
-        "company_address": customer.get("address") or customer.get("registered_address") or "",
-        "tax_id": customer.get("company_tax_id") or "",
-        "id_number": customer.get("id_number") or "",
-        "contact_phone": customer.get("phone") or "",
-        "contact_email": customer.get("email") or "",
-
-        # 場館資訊
+        # 甲方（出租人）資訊 - 從分館帶入
+        "branch_id": branch_id,
         "branch_name": branch.get("name") or "Hour Jungle",
-        "branch_address": branch.get("rental_address") or branch.get("address") or "",
-        "branch_phone": branch.get("contact_phone") or "",
+        "branch_company_name": branch_info["company_name"],
+        "branch_tax_id": branch_info["tax_id"],
+        "branch_representative": branch_info["representative"],
+        "branch_address": branch_info["address"],
+        "branch_court": branch_info["court"],
 
-        # 額外資訊
-        "list_price": float(contract.get("original_price") or contract.get("monthly_rent") or 0),
-        "payment_day": contract.get("payment_day") or 5,
-        "periods": 12
+        # 乙方（承租人）資訊 - 優先使用合約表欄位，fallback 到客戶表
+        "company_name": contract.get("company_name") or customer.get("company_name") or "",
+        "representative_name": contract.get("representative_name") or customer.get("name") or "",
+        "representative_address": contract.get("representative_address") or customer.get("address") or "",
+        "id_number": contract.get("id_number") or customer.get("id_number") or "",
+        "company_tax_id": contract.get("company_tax_id") or customer.get("company_tax_id") or "",
+        "phone": contract.get("phone") or customer.get("phone") or "",
+        "email": contract.get("email") or customer.get("email") or "",
+
+        # 電子用印
+        "show_stamp": True
     }
 
     # 3. 呼叫 Cloud Run 服務
@@ -212,14 +254,27 @@ async def contract_generate_pdf(
 def get_contract_type_name(contract_type: str) -> str:
     """取得合約類型名稱"""
     type_names = {
-        "virtual_office": "虛擬辦公室",
-        "shared_office": "共享辦公區",
-        "private_office": "獨立辦公室",
+        "virtual_office": "營業登記",
+        "office": "辦公室租賃",
+        "flex_seat": "自由座",
+        "coworking_fixed": "固定座位",
+        "coworking_flexible": "彈性座位",
         "meeting_room": "會議室租用",
-        "mailbox": "信箱服務",
-        "phone_answering": "電話接聽服務"
+        "mailbox": "郵件代收"
     }
     return type_names.get(contract_type, contract_type)
+
+
+def get_template_for_contract_type(contract_type: str) -> str:
+    """根據合約類型取得對應模板"""
+    templates = {
+        "virtual_office": "contract_virtual_office",
+        "office": "contract_office",
+        "flex_seat": "contract_flex_seat",
+        "coworking_fixed": "contract_coworking",
+        "coworking_flexible": "contract_coworking"
+    }
+    return templates.get(contract_type, "contract_virtual_office")
 
 
 def generate_default_contract_html(data: Dict[str, Any]) -> str:

@@ -1,0 +1,684 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="csrf-token" content="rvWoiZUVVYG0TQ43qZebFaKZfErzGcR0CbjQP8PE">
+    <meta name="description" content="共享辦公室">
+    <title>共享辦公室</title>
+    <link rel="shortcut icon" href="https://www.hourjungle.work/assets/images/hjlogo.png">
+    
+    <link rel="stylesheet" href="https://www.hourjungle.work/assets/js/plugins/datatables-bs5/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://www.hourjungle.work/assets/js/plugins/datatables-buttons-bs5/css/buttons.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://www.hourjungle.work/assets/js/plugins/datatables-responsive-bs5/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://www.hourjungle.work/assets/js/plugins/select2/css/select2.css">
+    <link rel="stylesheet" href="https://www.hourjungle.work/assets/js/plugins/sweetalert2/sweetalert2.min.css">
+    <link type="text/css" rel="stylesheet" href="https://www.hourjungle.work/assets/js/plugins/vakata-jstree/themes/default/style.min.css">
+    <link href="https://www.hourjungle.work/assets/js/plugins/filepond/dist/filepond.css" type="text/css" rel="stylesheet">
+    <link href="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css" type="text/css" rel="stylesheet">
+    <link href="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" type="text/css" rel="stylesheet">
+    <link href="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-get-file/dist/filepond-plugin-get-file.css" type="text/css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://www.hourjungle.work/assets/js/plugins/magnific-popup/magnific-popup.css">
+    <link rel="stylesheet" type="text/css" href="https://www.hourjungle.work/assets/js/plugins/jquery-ui/dist/themes/base/jquery-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="https://www.hourjungle.work/js/ckeditor5-super/ckeditor.css">
+    <link rel="stylesheet" id="css-main" href="https://www.hourjungle.work/assets/css/codebase.min.css">
+    <link rel="stylesheet" id="css-main" href="https://www.hourjungle.work/css/main.css">
+    <style type="text/css">
+                @media screen and (max-width: 600px){
+            .nav-main {
+                margin-bottom: 200px;
+            }
+            #form-import [name=file] {
+                margin-bottom: 5px;
+            }
+        }
+                    .frontend_captcha,.line_bot,.frontend_captcha,.line_bot{
+                display: none!important;
+            }
+            </style>
+          </head>
+  <body>
+    <div id="page-container" class="sidebar-dark sidebar-o enable-page-overlay side-scroll page-header-modern main-content side-trans-enabled"><div id="page-overlay"></div>
+      <nav id="sidebar">
+        <div class="sidebar-content">
+  <div class="content-header justify-content-lg-center">
+    <div>
+      
+    </div>
+
+    <div>
+      <button type="button" class="btn btn-sm btn-alt-danger d-lg-none" data-toggle="layout" data-action="sidebar_close">
+        <i class="fa fa-fw fa-times"></i>
+      </button>
+    </div>
+  </div>
+  <div class="js-sidebar-scroll" data-simplebar="init"><div class="simplebar-wrapper" style="margin: 0px;"><div class="simplebar-height-auto-observer-wrapper"><div class="simplebar-height-auto-observer"></div></div><div class="simplebar-mask"><div class="simplebar-offset" style="right: 0px; bottom: 0px;"><div class="simplebar-content-wrapper" tabindex="0" role="region" aria-label="scrollable content" style="height: 100%; overflow: hidden;"><div class="simplebar-content" style="padding: 0px;">
+    <div class="content-side content-side-user px-0 py-0">
+      <div class="smini-visible-block animated fadeIn px-2">
+        <img class="img-avatar img-avatar32" src="https://www.hourjungle.work/assets/media/avatars/avatar7.jpg" alt="">
+      </div>
+
+      <div class="smini-hidden text-center mx-auto">
+        <a class="img-link" href="javascript:void(0);">
+          <img class="img-avatar" src="https://www.hourjungle.work/assets/media/avatars/avatar7.jpg" alt="">
+        </a>
+        <ul class="list-inline mt-3 mb-0">
+          <li class="list-inline-item">
+            <a class="link-fx text-dual fs-sm fw-semibold text-uppercase" href="javascript:void(0);">admin</a>
+          </li>
+          
+          <li class="list-inline-item">
+            <a class="link-fx text-dual" href="https://www.hourjungle.work/backend/logout">
+              <i class="fa fa-sign-out-alt"></i>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="content-side content-side-full">
+      <ul class="nav-main">
+        <li class="nav-main-item">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/dashboard">
+            <i class="nav-main-link-icon fa fa-house-user"></i>
+            <span class="nav-main-link-name">首頁</span>
+          </a>
+        </li>
+        <li class="nav-main-item ">
+          <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="javascript:void(0);">
+        <i class="nav-main-link-icon fa fa-file-lines"></i>
+        <span class="nav-main-link-name">台北信義安和館</span>
+      </a>
+      <ul class="nav-main-submenu">
+        <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/taipei_customers" link="taipei_customers">
+        
+        <span class="nav-main-link-name">顧客列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/taipei_resources" link="taipei_resources">
+        
+        <span class="nav-main-link-name">資源列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/taipei_projects" link="taipei_projects">
+        
+        <span class="nav-main-link-name">專案列表</span>
+      </a>
+      </li>
+      </ul>
+      </li>
+    <li class="nav-main-item open">
+          <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="javascript:void(0);">
+        <i class="nav-main-link-icon fa fa-file-lines"></i>
+        <span class="nav-main-link-name">台中大忠館</span>
+      </a>
+      <ul class="nav-main-submenu">
+        <li class="nav-main-item open">
+          <a class="nav-main-link active" href="https://www.hourjungle.work/backend/taichung_customers" link="taichung_customers">
+        
+        <span class="nav-main-link-name">顧客列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/taichung_resources" link="taichung_resources">
+        
+        <span class="nav-main-link-name">資源列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/taichung_projects" link="taichung_projects">
+        
+        <span class="nav-main-link-name">專案列表</span>
+      </a>
+      </li>
+      </ul>
+      </li>
+    <li class="nav-main-item ">
+          <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="javascript:void(0);">
+        <i class="nav-main-link-icon fa fa-file-lines"></i>
+        <span class="nav-main-link-name">台南東寧館</span>
+      </a>
+      <ul class="nav-main-submenu">
+        <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan_customers" link="tainan_customers">
+        
+        <span class="nav-main-link-name">顧客列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan_resources" link="tainan_resources">
+        
+        <span class="nav-main-link-name">資源列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan_projects" link="tainan_projects">
+        
+        <span class="nav-main-link-name">專案列表</span>
+      </a>
+      </li>
+      </ul>
+      </li>
+    <li class="nav-main-item ">
+          <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="javascript:void(0);">
+        <i class="nav-main-link-icon fa fa-file-lines"></i>
+        <span class="nav-main-link-name">台南崇學館</span>
+      </a>
+      <ul class="nav-main-submenu">
+        <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan2_customers" link="tainan2_customers">
+        
+        <span class="nav-main-link-name">顧客列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan2_resources" link="tainan2_resources">
+        
+        <span class="nav-main-link-name">資源列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan2_projects" link="tainan2_projects">
+        
+        <span class="nav-main-link-name">專案列表</span>
+      </a>
+      </li>
+      </ul>
+      </li>
+    <li class="nav-main-item ">
+          <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="javascript:void(0);">
+        <i class="nav-main-link-icon fa fa-file-lines"></i>
+        <span class="nav-main-link-name">台南中山館</span>
+      </a>
+      <ul class="nav-main-submenu">
+        <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan3_customers" link="tainan3_customers">
+        
+        <span class="nav-main-link-name">顧客列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan3_resources" link="tainan3_resources">
+        
+        <span class="nav-main-link-name">資源列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/tainan3_projects" link="tainan3_projects">
+        
+        <span class="nav-main-link-name">專案列表</span>
+      </a>
+      </li>
+      </ul>
+      </li>
+    <li class="nav-main-item ">
+          <a class="nav-main-link nav-main-link-submenu" data-toggle="submenu" aria-haspopup="true" aria-expanded="false" href="javascript:void(0);">
+        <i class="nav-main-link-icon fa fa-gears"></i>
+        <span class="nav-main-link-name">系統管理</span>
+      </a>
+      <ul class="nav-main-submenu">
+        <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/admin_users" link="admin_users">
+        
+        <span class="nav-main-link-name">管理員列表</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/admin_groups" link="admin_groups">
+        
+        <span class="nav-main-link-name">管理員群組</span>
+      </a>
+      </li>
+    <li class="nav-main-item  open ">
+          <a class="nav-main-link " href="https://www.hourjungle.work/backend/system_settings" link="system_settings">
+        
+        <span class="nav-main-link-name">系統設定</span>
+      </a>
+      </li>
+      </ul>
+      </li>
+      </ul>
+    </div>
+  </div></div></div></div><div class="simplebar-placeholder" style="width: auto; height: 602px;"></div></div><div class="simplebar-track simplebar-horizontal" style="visibility: hidden;"><div class="simplebar-scrollbar" style="width: 0px; display: none;"></div></div><div class="simplebar-track simplebar-vertical" style="visibility: hidden;"><div class="simplebar-scrollbar" style="height: 0px; display: none;"></div></div></div>
+</div>
+      </nav>
+
+      <header id="page-header">
+        <div class="content-header">
+  
+  <div id="page-header-loader" class="overlay-header bg-primary">
+    <div class="content-header">
+      <div class="w-100 text-center">
+        <i class="far fa-sun fa-spin text-white"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="space-x-1">
+    <button type="button" class="btn btn-sm btn-alt-secondary" data-toggle="layout" data-action="sidebar_toggle">
+      <i class="fa fa-fw fa-bars"></i>
+    </button>
+  </div>
+
+  <div class="space-x-1">
+    <div class="dropdown d-inline-block">
+      <button type="button" class="btn btn-sm btn-alt-secondary" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="fa fa-user d-sm-none"></i>
+        <span class="d-none d-sm-inline-block fw-semibold">admin</span>
+        <i class="fa fa-angle-down opacity-50 ms-1"></i>
+      </button>
+      <div class="dropdown-menu dropdown-menu-md dropdown-menu-end p-0" aria-labelledby="page-header-user-dropdown">
+        <div class="px-2 py-3 bg-body-light rounded-top">
+          <h5 class="h6 text-center mb-0">
+            admin
+          </h5>
+        </div>
+        <div class="p-2">
+          
+
+          <a class="dropdown-item d-flex align-items-center justify-content-between space-x-1" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#updatePasswordModal">
+            <span>更新密碼</span>
+            <i class="fa fa-key opacity-25"></i>
+          </a>
+
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item d-flex align-items-center justify-content-between space-x-1" href="https://www.hourjungle.work/backend/logout">
+            <span>登出</span>
+            <i class="fa fa-fw fa-sign-out-alt opacity-25"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      </header>
+
+      <main id="main-container">
+        <div class="content">
+        <h2 class="content-heading">
+            
+        </h2>
+        <div class="block block-rounded">
+    <div class="block-header block-header-default">
+        <h3 class="block-title">匯入</h3>
+    </div>
+    <div class="block-content block-content-full">
+        <form id="form-import" action="https://www.hourjungle.work/backend/taichung_customers/import" method="post">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="file" required="" class="form-control" id="file-input-custom" name="file" data-toggle="custom-file-input" accept=".xlsx, .xls, .csv" style="">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary me-2"><i class="fa fa-upload me-1"></i>上傳</button>
+                    <a type="submit" class="btn btn-success me-2" href="https://www.hourjungle.work/excel_tmp/taichung_customers_example.xlsx"><i class="fa fa-file me-1"></i>範例檔案</a>
+                </div>
+            </div>
+            <div class="spinner-border text-primary upload-loading" role="status" style="display: none;">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="block block-rounded">
+    <div class="block-header block-header-default">
+        <h3 class="block-title">列表</h3>
+                <a href="https://www.hourjungle.work/backend/taichung_customers/export" class="btn btn-success export me-2" target="_blank">匯出</a>
+                <a href="https://www.hourjungle.work/backend/taichung_customers/create" class="btn btn-primary create">新增</a>
+    </div>
+    <div class="block-content block-content-full">
+        <div id="data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer"><div class="row"><div class="col-sm-12 col-md-6"><div class="dataTables_length" id="data-table_length"><label>顯示 <select name="data-table_length" aria-controls="data-table" class="form-select form-select-sm"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select> 項結果</label></div></div><div class="col-sm-12 col-md-6"><div id="data-table_filter" class="dataTables_filter"><label>搜尋:<input type="search" class="form-control form-control-sm" placeholder="" aria-controls="data-table" style=""></label></div></div></div><div class="row dt-row"><div class="col-sm-12"><table class="table table-bordered table-striped table-vcenter js-dataTable-responsive dataTable no-footer dtr-inline" id="data-table" aria-describedby="data-table_info">
+            <thead><tr><th class="text-md-center sorting_disabled" rowspan="1" colspan="1" style="width: 5%;" aria-label="#">#</th><th class="text-md-center sorting" tabindex="0" aria-controls="data-table" rowspan="1" colspan="1" aria-label="客戶編號: 升冪排列">客戶編號</th><th class="text-md-center sorting" tabindex="0" aria-controls="data-table" rowspan="1" colspan="1" aria-label="客戶姓名: 升冪排列">客戶姓名</th><th class="text-md-center sorting" tabindex="0" aria-controls="data-table" rowspan="1" colspan="1" aria-label="公司名稱: 升冪排列">公司名稱</th><th class="text-md-center sorting_disabled" rowspan="1" colspan="1" style="width: 5%;" aria-label="狀態">狀態</th><th class="text-md-center sorting sorting_desc" tabindex="0" aria-controls="data-table" rowspan="1" colspan="1" style="width: 15%;" aria-sort="descending" aria-label="新增時間: 升冪排列">新增時間</th><th class="text-md-center sorting_disabled" rowspan="1" colspan="1" style="width: 20%;" aria-label="操作">操作</th></tr></thead>
+            <tbody><tr class="odd"><td class="text-md-center dtr-control">1</td><td class="  text-md-center">1352</td><td class="  text-md-center">邱煥珽</td><td class="  text-md-center"></td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-10-24 20:58:04</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1352">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1352/edit">修改</a>
+                <a data-id="1352" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="even"><td class="text-md-center dtr-control">2</td><td class="  text-md-center">1351</td><td class="  text-md-center">顏晨庭</td><td class="  text-md-center">台灣船舶檢測鑑定有限公司</td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-10-22 14:38:01</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1351">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1351/edit">修改</a>
+                <a data-id="1351" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="odd"><td class="text-md-center dtr-control">3</td><td class="  text-md-center">1329</td><td class="  text-md-center">黃羽衫</td><td class="  text-md-center"></td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-09-16 19:56:35</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1329">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1329/edit">修改</a>
+                <a data-id="1329" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="even"><td class="text-md-center dtr-control">4</td><td class="  text-md-center">1314</td><td class="  text-md-center">曾惠美</td><td class="  text-md-center">美強生營養品股份有限公司</td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-08-21 18:44:30</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1314">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1314/edit">修改</a>
+                <a data-id="1314" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="odd"><td class="text-md-center dtr-control">5</td><td class="  text-md-center">1297</td><td class="  text-md-center">蕭雅文</td><td class="  text-md-center"></td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-08-12 10:45:10</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1297">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1297/edit">修改</a>
+                <a data-id="1297" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="even"><td class="text-md-center dtr-control">6</td><td class="  text-md-center">1296</td><td class="  text-md-center">陳定榮</td><td class="  text-md-center">瑞士商梅特勒托利多股份有限公司</td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-08-10 15:19:39</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1296">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1296/edit">修改</a>
+                <a data-id="1296" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="odd"><td class="text-md-center dtr-control">7</td><td class="  text-md-center">1275</td><td class="  text-md-center">黃嵐詩</td><td class="  text-md-center"></td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-07-26 09:26:36</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1275">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1275/edit">修改</a>
+                <a data-id="1275" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="even"><td class="text-md-center dtr-control">8</td><td class="  text-md-center">1259</td><td class="  text-md-center">莊娜宇</td><td class="  text-md-center"></td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-06-29 12:18:29</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1259">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1259/edit">修改</a>
+                <a data-id="1259" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="odd"><td class="text-md-center dtr-control">9</td><td class="  text-md-center">1257</td><td class="  text-md-center">林子堯</td><td class="  text-md-center">中盛建維</td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-06-25 15:18:27</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1257">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1257/edit">修改</a>
+                <a data-id="1257" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr><tr class="even"><td class="text-md-center dtr-control">10</td><td class="  text-md-center">1254</td><td class="  text-md-center">陳宥閎</td><td class="  text-md-center"></td><td class="  text-md-center"><span class="badge bg-success fs-6">啟用</span></td><td class="text-md-center sorting_1">2025-06-24 09:39:31</td><td class="  text-md-center"><a class="read btn btn-sm btn-primary" href="https://www.hourjungle.work/backend/taichung_customers/1254">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="https://www.hourjungle.work/backend/taichung_customers/1254/edit">修改</a>
+                <a data-id="1254" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a></td></tr></tbody>
+        </table><div id="data-table_processing" class="dataTables_processing card" style="display: none;">處理中...<div><div></div><div></div><div></div><div></div></div></div></div></div><div class="row"><div class="col-sm-12 col-md-5"><div class="dataTables_info" id="data-table_info" role="status" aria-live="polite">顯示第 1 至 10 項結果，共 108 項</div></div><div class="col-sm-12 col-md-7"><div class="dataTables_paginate paging_simple_numbers" id="data-table_paginate"><ul class="pagination"><li class="paginate_button page-item previous disabled" id="data-table_previous"><a href="#" aria-controls="data-table" data-dt-idx="previous" tabindex="0" class="page-link">上一頁</a></li><li class="paginate_button page-item active"><a href="#" aria-controls="data-table" data-dt-idx="0" tabindex="0" class="page-link">1</a></li><li class="paginate_button page-item "><a href="#" aria-controls="data-table" data-dt-idx="1" tabindex="0" class="page-link">2</a></li><li class="paginate_button page-item "><a href="#" aria-controls="data-table" data-dt-idx="2" tabindex="0" class="page-link">3</a></li><li class="paginate_button page-item "><a href="#" aria-controls="data-table" data-dt-idx="3" tabindex="0" class="page-link">4</a></li><li class="paginate_button page-item "><a href="#" aria-controls="data-table" data-dt-idx="4" tabindex="0" class="page-link">5</a></li><li class="paginate_button page-item disabled" id="data-table_ellipsis"><a href="#" aria-controls="data-table" data-dt-idx="ellipsis" tabindex="0" class="page-link">…</a></li><li class="paginate_button page-item "><a href="#" aria-controls="data-table" data-dt-idx="10" tabindex="0" class="page-link">11</a></li><li class="paginate_button page-item next" id="data-table_next"><a href="#" aria-controls="data-table" data-dt-idx="next" tabindex="0" class="page-link">下一頁</a></li></ul></div></div></div></div>
+    </div>
+</div>
+        
+        </div>
+      </main>
+
+      <footer id="page-footer">
+        <div class="content py-3">
+  <div class="row fs-sm">
+    <div class="col-sm-6 order-sm-1 py-1 text-center text-sm-start">
+      <a class="fw-semibold" target="_blank">後台系統</a> © <span data-toggle="year-copy" class="js-year-copy-enabled">2025</span>
+    </div>
+  </div>
+</div>
+      </footer>
+    </div>
+
+    <div class="modal fade" id="updatePasswordModal" tabindex="-1" role="dialog" aria-labelledby="modal-fadein" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="block block-rounded shadow-none mb-0">
+                <form id="upwd-form" action="https://www.hourjungle.work/backend/update_password" method="POST">
+                    <div class="block-header block-header-default">
+                        <h3 class="block-title">更新密碼</h3>
+                        <div class="block-options">
+                            <button type="button" class="btn-block-option" data-bs-dismiss="modal" aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="block-content fs-sm">
+                        <input type="hidden" name="_token" value="rvWoiZUVVYG0TQ43qZebFaKZfErzGcR0CbjQP8PE" style="">                        <div class="mb-3">
+                            <label for="oldPassword" class="form-label">舊密碼</label>
+                            <input type="password" class="form-control" id="oldPassword" required="" name="old_password" style="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">新密碼</label>
+                            <input type="password" class="form-control" id="newPassword" required="" name="new_password" style="">
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">新密碼確認</label>
+                            <input type="password" class="form-control" id="confirmPassword" required="" name="confirm_password" style="">
+                        </div>
+                    </div>
+                    <div class="block-content block-content-full block-content-sm text-end border-top">
+                        <button type="submit" class="btn btn-primary me-1">更新</button>
+                        <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>    <div class="modal fade" id="photoModal" tabindex="-1" role="dialog" aria-labelledby="modal-fadein" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="block block-rounded shadow-none mb-0">
+                <form id="upph-form" action="https://www.hourjungle.work/backend/update_photo" method="POST">
+                    <div class="block-header block-header-default">
+                        <h3 class="block-title">更新頭像</h3>
+                        <div class="block-options">
+                            <button type="button" class="btn-block-option" data-bs-dismiss="modal" aria-label="Close">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="block-content fs-sm">
+                        <div class="row items-push">
+                            <input type="hidden" name="_token" value="rvWoiZUVVYG0TQ43qZebFaKZfErzGcR0CbjQP8PE" style="">                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block0" name="photo_path" value="/assets/media/avatars/avatar0.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block0">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar0.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block1" name="photo_path" value="/assets/media/avatars/avatar1.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block1">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar1.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block2" name="photo_path" value="/assets/media/avatars/avatar2.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block2">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar2.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block3" name="photo_path" value="/assets/media/avatars/avatar3.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block3">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar3.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block4" name="photo_path" value="/assets/media/avatars/avatar4.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block4">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar4.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block5" name="photo_path" value="/assets/media/avatars/avatar5.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block5">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar5.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block6" name="photo_path" value="/assets/media/avatars/avatar6.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block6">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar6.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block7" name="photo_path" value="/assets/media/avatars/avatar7.jpg" checked="" style="">
+                                    <label class="form-check-label" for="photo-radio-block7">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar7.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block8" name="photo_path" value="/assets/media/avatars/avatar8.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block8">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar8.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                        <div class="col-md-2">
+                                <div class="form-check form-block">
+                                    <input type="radio" class="form-check-input" id="photo-radio-block9" name="photo_path" value="/assets/media/avatars/avatar9.jpg" style="">
+                                    <label class="form-check-label" for="photo-radio-block9">
+                                        <span class="d-flex align-items-center">
+                                            <img class="img-avatar img-avatar48" src="https://www.hourjungle.work/assets/media/avatars/avatar9.jpg">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                                                    </div>
+                    </div>
+                    <div class="block-content block-content-full block-content-sm text-end border-top">
+                        <button type="submit" class="btn btn-primary me-1">更新</button>
+                        <button type="button" class="btn btn-alt-secondary" data-bs-dismiss="modal">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+    <script src="https://www.hourjungle.work/assets/js/lib/jquery.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/jquery-ui/dist/jquery-ui.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-bs5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-responsive-bs5/js/responsive.bootstrap5.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-buttons/dataTables.buttons.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-buttons-bs5/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-buttons-jszip/jszip.min.js"></script>
+    
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-buttons/buttons.print.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/datatables-buttons/buttons.html5.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/magnific-popup/jquery.magnific-popup.min.js"></script>
+    
+    <script src="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-file-encode/dist/filepond-plugin-file-encode.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/filepond-plugin-get-file/dist/filepond-plugin-get-file.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/filepond/dist/filepond.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/select2/js/select2.full.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/bootstrap-notify/bootstrap-notify.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/sweetalert2/sweetalert2.min.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/plugins/vakata-jstree/jstree.min.js"></script>
+        <script src="https://www.hourjungle.work/js/jquery.form.min.js"></script>
+    <script src="https://www.hourjungle.work/js/datepickerTW.js"></script>
+    <script src="https://www.hourjungle.work/js/main.js"></script>
+    <script src="https://www.hourjungle.work/assets/js/codebase.app.min.js"></script>
+    <script type="text/javascript">
+        var statusList = {
+            '0':'禁用',
+            '1':'啟用'
+        };
+
+        var datatableLangJson = 'https://www.hourjungle.work/datatable-zh-Hant.json';
+
+                    $('#btabs-static-profile',).remove();
+            $('[href="#btabs-static-profile"]').parents('li').remove();
+        
+                    $('#sidebar a[href*="taichung_customers"]').parents('li').addClass('open')||false;
+            $('#sidebar a[link="taichung_customers"]').addClass('active')||false;
+        
+                    $('.frontend_captcha,.line_bot,.frontend_captcha,.line_bot').remove();
+            </script>
+        <script type="text/javascript">
+    var columns = [
+        { data: 'no', className: "text-md-center", title: '客戶編號'},
+        { data: 'name', className: "text-md-center", title: '客戶姓名'},
+        { data: 'company_name', className: "text-md-center", title: '公司名稱'},
+        { data: 'status', className: "text-md-center", width: "5%", title: '狀態', bSortable: false, render:function(data,type,row) {
+            switch(data){
+                case 0:
+                    statusColor = 'danger';
+                    break;
+                case 1:
+                    statusColor = 'success';
+                    break;
+            }
+            return `<span class="badge bg-${statusColor} fs-6">${statusList[data]}</span>`;
+        }},
+        { data: 'created_at', className: "text-md-center", width: "15%", title: '新增時間' },
+        { data: 'id', className: "text-md-center", width: "20%", title: '操作', bSortable: false, render:function(data,type,row) {
+            return `<a class="read btn btn-sm btn-primary" href="${ path }/${ data }">查看</a>
+                <a class="edit btn btn-sm btn-warning ms-2" href="${ path }/${ data }/edit">修改</a>
+                <a data-id="${ data }" class="delete btn btn-sm btn-danger ms-2" href="javascript:;">刪除</a>`;
+        }},
+    ];
+    var order = [[5, 'desc']];
+</script>
+<script type="text/javascript">
+    var tablecolumns = [
+        { data: 'id', className: "text-md-center", width: "5%", title: '#', bSearchable: false, bSortable: false, render: function ( data, type, row , meta ) {
+            return (meta.settings._iDisplayStart / meta.settings._iDisplayLength * 10) + (meta.row + 1);
+        }},
+    ];
+    Array.prototype.splice.apply(tablecolumns, [1, 0].concat(columns));
+
+    var path = 'https://www.hourjungle.work/backend/taichung_customers';
+    var tableList = $('#data-table');
+    var table = tableList.DataTable({
+        autoWidth:false,
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        ajax: path,
+        language: { url: datatableLangJson },
+        stateSave: true,
+        fnDrawCallback: function () {
+            Codebase.helpers('magnific-popup');
+            $('#data-table .img-link').magnificPopup({type: 'image'});
+        },
+        order: order,
+        columns: tablecolumns
+    });
+
+    tableList.on('click','.delete',function(){
+        var id = $(this).data('id');
+        Swal.fire({ 
+            text: '確定要刪除嗎?',
+            icon: 'warning',
+            showCancelButton: true, 
+            confirmButtonText: '確定',
+            cancelButtonText: '取消'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `${ path }/${ id }`,
+                    type: 'DELETE',
+                    dataType: 'json',
+                    success: function(data) {
+                        Swal.fire({ text: data.message, icon: 'success' }).then(function() {
+                            table.ajax.reload(null, false);
+                        }); 
+                    },
+                });
+            }
+        });
+    });
+
+        var formImport = $('#form-import');
+    formImport.find('.spinner-border').hide();
+    formImport.ajaxForm({
+        beforeSubmit: function(arr, $form, options) {
+            formImport.find('button[type=submit]').attr('disabled',true);
+            formImport.find('.spinner-border').show();
+        },
+        success: function(data) {
+            Swal.fire({ text: data.message, icon: 'success' }).then(function() {
+                table.ajax.reload(null, false);
+            });
+        },
+        complete: function() {
+            formImport.find('button[type=submit]').attr('disabled',false);
+            formImport.find('.spinner-border').hide();
+            document.getElementById('form-import').reset();
+        }
+    });
+    
+    $(`.search-query-btn`).click(function(){
+        const data = $(`#form-query`).serialize();
+        table.ajax.url(`${path}?${data}`).load();
+    });
+    
+    $(`.search-reset-btn`).click(function(){
+        document.getElementById('form-query').reset();
+        $(`[type=hidden]`).val('');
+    });
+</script>
+          <script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;afb8378a066040aab0b9629bc3d03e60&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+</body></html>

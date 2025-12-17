@@ -1,0 +1,974 @@
+[
+  {
+    "excel_row": 39,
+    "original_id": "127",
+    "legacy_id": "DZ-127",
+    "name": "詹睿華",
+    "company_name": "步臻低碳策略有限公司",
+    "issue": "缺少電話",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 88,
+    "original_id": "228",
+    "legacy_id": "DZ-228",
+    "name": "黎文興",
+    "company_name": "興盛行銷管理顧問有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 89,
+    "original_id": "230",
+    "legacy_id": "DZ-230",
+    "name": "郭氏花",
+    "company_name": "花芙辰寶國際行銷管理顧問有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 94,
+    "original_id": "236",
+    "legacy_id": "DZ-236",
+    "name": "陳印泰",
+    "company_name": "金如泰股份有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 97,
+    "original_id": "239",
+    "legacy_id": "DZ-239",
+    "name": "謝孟廷",
+    "company_name": "起床打單有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 99,
+    "original_id": "241",
+    "legacy_id": "DZ-241",
+    "name": "鍾孟迪",
+    "company_name": "流星有限公司",
+    "issue": "缺少電話",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 99,
+    "original_id": "241",
+    "legacy_id": "DZ-241",
+    "name": "鍾孟迪",
+    "company_name": "流星有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 104,
+    "original_id": "247",
+    "legacy_id": "DZ-247",
+    "name": "林昭勲",
+    "company_name": "兩兩空間製作所有限公司",
+    "issue": "缺少電話",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 111,
+    "original_id": "254",
+    "legacy_id": "DZ-254",
+    "name": "阮氏海厚",
+    "company_name": "金海小舖",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 114,
+    "original_id": "257",
+    "legacy_id": "DZ-257",
+    "name": "黃信樺",
+    "company_name": "証信法律事務所",
+    "issue": "公司類型但缺少統編",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 121,
+    "original_id": "264",
+    "legacy_id": "DZ-264",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 122,
+    "original_id": "265",
+    "legacy_id": "DZ-265",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 123,
+    "original_id": "266",
+    "legacy_id": "DZ-266",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 124,
+    "original_id": "267",
+    "legacy_id": "DZ-267",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 125,
+    "original_id": "268",
+    "legacy_id": "DZ-268",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 126,
+    "original_id": "269",
+    "legacy_id": "DZ-269",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 127,
+    "original_id": "270",
+    "legacy_id": "DZ-270",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 128,
+    "original_id": "271",
+    "legacy_id": "DZ-271",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 129,
+    "original_id": "272",
+    "legacy_id": "DZ-272",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 130,
+    "original_id": "273",
+    "legacy_id": "DZ-273",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 131,
+    "original_id": "274",
+    "legacy_id": "DZ-274",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 132,
+    "original_id": "275",
+    "legacy_id": "DZ-275",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 133,
+    "original_id": "276",
+    "legacy_id": "DZ-276",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 134,
+    "original_id": "277",
+    "legacy_id": "DZ-277",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 135,
+    "original_id": "278",
+    "legacy_id": "DZ-278",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 136,
+    "original_id": "279",
+    "legacy_id": "DZ-279",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 137,
+    "original_id": "280",
+    "legacy_id": "DZ-280",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 138,
+    "original_id": "281",
+    "legacy_id": "DZ-281",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 139,
+    "original_id": "282",
+    "legacy_id": "DZ-282",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 140,
+    "original_id": "283",
+    "legacy_id": "DZ-283",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 141,
+    "original_id": "284",
+    "legacy_id": "DZ-284",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 142,
+    "original_id": "285",
+    "legacy_id": "DZ-285",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 143,
+    "original_id": "286",
+    "legacy_id": "DZ-286",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 144,
+    "original_id": "287",
+    "legacy_id": "DZ-287",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 145,
+    "original_id": "288",
+    "legacy_id": "DZ-288",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 146,
+    "original_id": "289",
+    "legacy_id": "DZ-289",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 147,
+    "original_id": "290",
+    "legacy_id": "DZ-290",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 2,
+    "original_id": "V01",
+    "legacy_id": "HR-001",
+    "name": "吳瑋翎",
+    "company_name": "米恩恩商行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 3,
+    "original_id": "V02",
+    "legacy_id": "HR-002",
+    "name": "朱芸靜",
+    "company_name": "朱芸工作室",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 4,
+    "original_id": "V04",
+    "legacy_id": "HR-004",
+    "name": "陳枳岇",
+    "company_name": "善容塗裝工程行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 5,
+    "original_id": "V05",
+    "legacy_id": "HR-005",
+    "name": "陳玉美",
+    "company_name": "衫野人戶外用品",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 6,
+    "original_id": "V06",
+    "legacy_id": "HR-006",
+    "name": "黃文貞",
+    "company_name": "傑文記帳士事務所",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 7,
+    "original_id": "V07",
+    "legacy_id": "HR-007",
+    "name": "羅子庭",
+    "company_name": "庭信有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 8,
+    "original_id": "V08",
+    "legacy_id": "HR-008",
+    "name": "羅子捷",
+    "company_name": "宏捷有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 9,
+    "original_id": "V09",
+    "legacy_id": "HR-009",
+    "name": "田秀華",
+    "company_name": "秀旺工程行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 10,
+    "original_id": "V10",
+    "legacy_id": "HR-010",
+    "name": "羅瑞寶",
+    "company_name": "寶信工程行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 11,
+    "original_id": "V11",
+    "legacy_id": "HR-011",
+    "name": "鍾耀霆",
+    "company_name": "物潤實業社",
+    "issue": "缺少電話",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 11,
+    "original_id": "V11",
+    "legacy_id": "HR-011",
+    "name": "鍾耀霆",
+    "company_name": "物潤實業社",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 12,
+    "original_id": "V12",
+    "legacy_id": "HR-012",
+    "name": "陳詩宜",
+    "company_name": "暮斯迪歐工作室",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 13,
+    "original_id": "V13",
+    "legacy_id": "HR-013",
+    "name": "張呈如",
+    "company_name": "台灣海協有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 14,
+    "original_id": "V14",
+    "legacy_id": "HR-014",
+    "name": "黎小貞",
+    "company_name": "可愛企業社",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 15,
+    "original_id": "V15",
+    "legacy_id": "HR-015",
+    "name": "劉思辰",
+    "company_name": "",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 16,
+    "original_id": "V16",
+    "legacy_id": "HR-016",
+    "name": "朱冠霖",
+    "company_name": "佑富裕地產企業社",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 17,
+    "original_id": "V17",
+    "legacy_id": "HR-017",
+    "name": "賈千儀",
+    "company_name": "石在晶閃工作室",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 18,
+    "original_id": "V18",
+    "legacy_id": "HR-018",
+    "name": "林基賢",
+    "company_name": "緒瑕工作室",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 19,
+    "original_id": "V19",
+    "legacy_id": "HR-019",
+    "name": "洪莉晴",
+    "company_name": "鎧鋐企業股份有限公司",
+    "issue": "缺少電話",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 19,
+    "original_id": "V19",
+    "legacy_id": "HR-019",
+    "name": "洪莉晴",
+    "company_name": "鎧鋐企業股份有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 20,
+    "original_id": "V20",
+    "legacy_id": "HR-020",
+    "name": "彭郁斐",
+    "company_name": "斐樂晶礦企業社",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 21,
+    "original_id": "V21",
+    "legacy_id": "HR-021",
+    "name": "歐玫君",
+    "company_name": "大穀達人股份有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 22,
+    "original_id": "V22",
+    "legacy_id": "HR-022",
+    "name": "陳柏諺",
+    "company_name": "禾頤商貿行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 23,
+    "original_id": "V23",
+    "legacy_id": "HR-023",
+    "name": "廖含珮",
+    "company_name": "翊棠商行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 24,
+    "original_id": "V24",
+    "legacy_id": "HR-024",
+    "name": "黃羽衫",
+    "company_name": "亮京京工程清潔企業社",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 25,
+    "original_id": "V25",
+    "legacy_id": "HR-025",
+    "name": "王盈甄",
+    "company_name": "甄選良品生活百貨行",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 26,
+    "original_id": "V26",
+    "legacy_id": "HR-026",
+    "name": "黃宥勝",
+    "company_name": "羅摩工程貿易有限公司",
+    "issue": "公司類型但缺少統編",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 27,
+    "original_id": "V27",
+    "legacy_id": "HR-027",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 28,
+    "original_id": "V28",
+    "legacy_id": "HR-028",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 29,
+    "original_id": "V29",
+    "legacy_id": "HR-029",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 30,
+    "original_id": "V30",
+    "legacy_id": "HR-030",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 31,
+    "original_id": "V31",
+    "legacy_id": "HR-031",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 32,
+    "original_id": "V32",
+    "legacy_id": "HR-032",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 33,
+    "original_id": "V33",
+    "legacy_id": "HR-033",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 34,
+    "original_id": "V34",
+    "legacy_id": "HR-034",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 35,
+    "original_id": "V35",
+    "legacy_id": "HR-035",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 36,
+    "original_id": "V36",
+    "legacy_id": "HR-036",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 37,
+    "original_id": "V37",
+    "legacy_id": "HR-037",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 38,
+    "original_id": "V38",
+    "legacy_id": "HR-038",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 39,
+    "original_id": "V39",
+    "legacy_id": "HR-039",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 40,
+    "original_id": "V40",
+    "legacy_id": "HR-040",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 41,
+    "original_id": "V41",
+    "legacy_id": "HR-041",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 42,
+    "original_id": "V42",
+    "legacy_id": "HR-042",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 43,
+    "original_id": "V43",
+    "legacy_id": "HR-043",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 44,
+    "original_id": "V44",
+    "legacy_id": "HR-044",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 45,
+    "original_id": "V45",
+    "legacy_id": "HR-045",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 46,
+    "original_id": "V46",
+    "legacy_id": "HR-046",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 47,
+    "original_id": "V47",
+    "legacy_id": "HR-047",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 48,
+    "original_id": "V48",
+    "legacy_id": "HR-048",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 49,
+    "original_id": "V49",
+    "legacy_id": "HR-049",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 50,
+    "original_id": "V50",
+    "legacy_id": "HR-050",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 51,
+    "original_id": "V51",
+    "legacy_id": "HR-051",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 52,
+    "original_id": "V52",
+    "legacy_id": "HR-052",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 53,
+    "original_id": "V53",
+    "legacy_id": "HR-053",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 54,
+    "original_id": "V54",
+    "legacy_id": "HR-054",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 55,
+    "original_id": "V55",
+    "legacy_id": "HR-055",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 56,
+    "original_id": "V56",
+    "legacy_id": "HR-056",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 57,
+    "original_id": "V57",
+    "legacy_id": "HR-057",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 58,
+    "original_id": "V58",
+    "legacy_id": "HR-058",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 59,
+    "original_id": "V59",
+    "legacy_id": "HR-059",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 60,
+    "original_id": "V60",
+    "legacy_id": "HR-060",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 61,
+    "original_id": "V61",
+    "legacy_id": "HR-061",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 62,
+    "original_id": "V62",
+    "legacy_id": "HR-062",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 63,
+    "original_id": "V63",
+    "legacy_id": "HR-063",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 64,
+    "original_id": "V64",
+    "legacy_id": "HR-064",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 65,
+    "original_id": "V65",
+    "legacy_id": "HR-065",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 66,
+    "original_id": "V66",
+    "legacy_id": "HR-066",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 67,
+    "original_id": "V67",
+    "legacy_id": "HR-067",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 68,
+    "original_id": "V68",
+    "legacy_id": "HR-068",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 69,
+    "original_id": "V69",
+    "legacy_id": "HR-069",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  },
+  {
+    "excel_row": 70,
+    "original_id": "V70",
+    "legacy_id": "HR-070",
+    "name": "",
+    "company_name": "",
+    "issue": "缺少姓名（已跳過）",
+    "file": "環瑞客戶資料表crm.xlsx"
+  }
+]
