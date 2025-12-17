@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>共同工作室租賃契約（自由座）- {{ contract_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 30px 40px 40px 40px;
+        }
+        body {
+            font-family: "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+            font-size: 9pt;
+            line-height: 1.6;
+            color: #333;
+        }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .logo-text {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #2d5016;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .parties {
+            margin-bottom: 12px;
+        }
+        .party-line {
+            margin-bottom: 3px;
+        }
+        .intro {
+            margin-bottom: 12px;
+        }
+        .article {
+            margin-bottom: 10px;
+        }
+        .article-title {
+            font-weight: bold;
+        }
+        .sub-item {
+            margin-left: 0;
+            margin-bottom: 2px;
+        }
+        .signature-section {
+            margin-top: 30px;
+        }
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .signature-box {
+            width: 48%;
+        }
+        .signature-line {
+            margin-bottom: 8px;
+        }
+        .date-line {
+            text-align: right;
+            margin-top: 25px;
+        }
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+        }
+        .stamp-area {
+            width: 148px;
+            height: 90px;
+        }
+        .stamp-area.branch-2 {
+            width: 165px;
+            height: 114px;
+        }
+        .stamp-image {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        @media print {
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 第一頁 -->
+    <div class="page-1">
+        <div class="logo-container">
+            <span class="logo-text">HOUR JUNGLE</span>
+        </div>
+
+        <div class="title">共同工作室租賃契約</div>
+
+        <div class="parties">
+            <p class="party-line">立契約人</p>
+            <p class="party-line">出租人：{{ branch_company_name }}(以下簡稱甲方)</p>
+            <p class="party-line">承租人：{{ party_b_name }}(以下簡稱乙方)</p>
+        </div>
+
+        <p class="intro">因工作室租賃事件，訂立本契約，雙方同意之條件如左：</p>
+
+        <div class="article">
+            <p><span class="article-title">第一條：所在地及使用範圍：</span> {{ branch_address }}以及附屬公共設備開放時間為週一至週五09:00~18:00</p>
+        </div>
+
+        <div class="article">
+            <p><span class="article-title">第二條：租賃期限：</span>自{{ start_date_roc }}起，如雙方無異議則自動續約一個月。</p>
+        </div>
+
+        <div class="article">
+            <p class="article-title">第三條：租金：</p>
+            <p class="sub-item">一、每月自由座租金新台幣{{ monthly_rent_formatted }}元，(每月為一期，匯款手續費由乙方自行負責)</p>
+            <p class="sub-item">二、每期租金繳納日期每月{{ payment_day|string|zfill(2) }}日</p>
+        </div>
+
+        <div class="article">
+            <p class="article-title">第四條：使用租物之限制：</p>
+            <p class="sub-item">一、乙方不得將使用權限之全部或一部分轉租、出租、頂讓，或以其他變相方法使用工作室。</p>
+            <p class="sub-item">二、每一承租戶僅能申請一家公司執照。</p>
+            <p class="sub-item">三、乙方於租賃期滿應立即將工作空間遷讓交還，不得向甲方請求遷移費或任何費用。</p>
+            <p class="sub-item">四、工作室不得供非法使用，或經營非法之行業，或存收危險物品影響公共安全，若發現之，甲方有全權無條件終止合約，已支付租金不退還。</p>
+            <p class="sub-item">五、工作空間若有改裝設施之必要，乙方得甲方同意後得自行裝設，但不得損害原有建築，乙方於交還房屋時並應負責回復原狀。</p>
+            <p class="sub-item">六、乙方若欲退租或轉約，需於一個月前通知甲方，自乙方通知日後起算一個月為甲乙雙方合約終止日。</p>
+            <p class="sub-item">七、禁止架設伺服器以及礦機，若發現之，甲方有全權無條件終止合約，已支付租金不退還。</p>
+        </div>
+
+        <div class="article">
+            <p><span class="article-title">第五條：危險負擔：</span>乙方應以善良管理人之注意使用房屋，除因天災地變等不可抗拒之情形外，因乙方之過失致房屋毀損，應負損害賠償之責。</p>
+        </div>
+
+        <div class="article">
+            <p class="article-title">第六條：違約處罰：</p>
+            <p class="sub-item">一、乙方違反約定方法使用工作室，或拖欠房租，超過七日甲方得終止租約，押金不得抵算租金。</p>
+            <p class="sub-item">二、乙方於終止租約或租賃期滿不交還工作室，自終止租約或租賃期滿之翌日起，乙方應支付案房租五倍計算之違約金，所遺留設備不搬者，視同乙方同意交由甲方處理。</p>
+        </div>
+
+        <div class="article">
+            <p class="article-title">第七條：其他特約事項：</p>
+            <p class="sub-item">一、乙方除水電費(含公共電費)、管理費、網路費外，營業上必須繳納之稅捐需自行負擔。</p>
+            <p class="sub-item">二、乙方以甲方地址申請公司執照者，於合約終止時，需將公司登記遷出，甲方並依稅務等單位要求每月呈報遷出名單公文，否則甲方得將通報乙方營業登記遷出。</p>
+            <p class="sub-item">三、甲乙雙方僅有契約履行之責，乙方如與其他人有債務糾紛與法律責任，由乙方自行負責與甲方無關。</p>
+            <p class="sub-item">四、乙方如有寄放任何物品於甲方之處，甲方不負任何保管及法律責任，其責任問題均由乙方負全責。</p>
+        </div>
+
+        <div class="article">
+            <p class="article-title">第八條：應受強制執行之事項：</p>
+            <p class="sub-item">一、租約到期或欠繳房租或終止租約生效時。</p>
+            <p class="sub-item">二、乙方如有違反稅法、稅捐稽徵法、社秩法及虛設行號等等不法之事，並影響甲方權益，甲方得立即中止甲乙雙方租約，並應官方要求通報相關單位。甲乙方若無任何違法情事或虛設行號，虛開發票等行為，而無法設籍此地，乙方得終止租約，不以違約論。</p>
+        </div>
+
+        <div class="article">
+            <p><span class="article-title">第九條：雙方確認事項</span> 甲乙雙方同意，因本契約事項所生之一切爭議，雙方同意以{{ branch_court }}為第一審管轄法院</p>
+        </div>
+
+        <div class="page-number">第1頁（共2頁）</div>
+    </div>
+
+    <!-- 第二頁：簽名區 -->
+    <div class="page-break page-2">
+        <div class="logo-container">
+            <span class="logo-text">HOUR JUNGLE</span>
+        </div>
+
+        <!-- 簽名區 -->
+        <div class="signature-section">
+            <div class="signature-row">
+                <!-- 甲方 -->
+                <div class="signature-box">
+                    <p class="signature-line">出租人：{{ branch_company_name }}</p>
+                    <p class="signature-line">負責人：{{ branch_representative }}</p>
+                    <p class="signature-line">統一編號：{{ branch_tax_id }}</p>
+                </div>
+
+                <!-- 印章區域 -->
+                <div class="stamp-area {% if branch_id == 2 %}branch-2{% endif %}">
+                    {% if show_stamp %}
+                    <img class="stamp-image" src="/images/stamp-{% if branch_id == 2 %}pivotfrontier{% else %}yourspace{% endif %}.png" alt="公司印章">
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 乙方 -->
+            <div style="margin-top: 50px;">
+                <p class="signature-line">承租人：{{ company_name }}</p>
+                <p class="signature-line">負責人：{{ representative_name }}</p>
+                <p class="signature-line">統一編號：{{ company_tax_id }}</p>
+                <p class="signature-line">地址：{{ representative_address }}</p>
+                <p class="signature-line">聯絡電話：{{ phone }}</p>
+            </div>
+        </div>
+
+        <!-- 日期 -->
+        <p class="date-line">{{ today_roc_year }}年{{ today_month }}月{{ today_day }}日</p>
+
+        <div class="page-number">第2頁（共2頁）</div>
+    </div>
+</body>
+</html>

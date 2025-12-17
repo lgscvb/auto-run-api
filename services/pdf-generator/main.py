@@ -118,29 +118,48 @@ class ContractData(BaseModel):
     contract_type: str
     contract_type_name: str
     start_date: str
-    end_date: str
-    monthly_fee: float
-    deposit: float = 0
+    end_date: str = ""
+    monthly_rent: float = 0  # 折後租金
+    deposit_amount: float = 0  # 押金
     notes: str = ""
 
-    # 客戶資訊
-    customer_name: str
-    company_name: str = ""
-    company_address: str = ""
-    tax_id: str = ""
-    id_number: str = ""
-    contact_phone: str = ""
-    contact_email: str = ""
+    # 甲方（出租人）資訊 - 場館相關
+    branch_id: int = 1
+    branch_company_name: str = ""  # 出租公司名稱
+    branch_tax_id: str = ""  # 出租公司統編
+    branch_representative: str = "戴豪廷"  # 出租公司負責人
+    branch_address: str = ""  # 場館地址
+    branch_court: str = "台中地方法院"  # 管轄法院
 
-    # 場館資訊
-    branch_name: str
-    branch_address: str = ""
-    branch_phone: str = ""
+    # 乙方（承租人）資訊 - 從合約表讀取
+    company_name: str = ""  # 公司名稱
+    representative_name: str = ""  # 負責人姓名
+    representative_address: str = ""  # 負責人地址
+    id_number: str = ""  # 身分證號
+    company_tax_id: str = ""  # 公司統編
+    phone: str = ""  # 聯絡電話
+    email: str = ""  # Email
 
-    # 合約細節
-    list_price: Optional[float] = None  # 定價
+    # 租賃條件
+    original_price: Optional[float] = None  # 定價（原價）
     payment_day: int = 5  # 繳款日
     periods: int = 12  # 期數
+    room_number: str = ""  # 房號（辦公室用）
+
+    # 印章設定
+    show_stamp: bool = False
+
+    # 相容舊欄位（向後兼容）
+    monthly_fee: Optional[float] = None  # 舊欄位名
+    deposit: Optional[float] = None  # 舊欄位名
+    customer_name: str = ""  # 舊：客戶姓名
+    company_address: str = ""  # 舊：公司地址
+    tax_id: str = ""  # 舊：統編
+    contact_phone: str = ""  # 舊：電話
+    contact_email: str = ""  # 舊：Email
+    branch_name: str = ""  # 舊：場館名稱
+    branch_phone: str = ""  # 舊：場館電話
+    list_price: Optional[float] = None  # 舊：定價
 
 
 class QuoteItem(BaseModel):
@@ -286,6 +305,18 @@ def get_roc_year(date_str: str) -> str:
         return ""
 
 
+def format_date_roc(date_str: str) -> str:
+    """格式化日期為民國年格式（如：114年01月15日）"""
+    if not date_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        roc_year = dt.year - 1911
+        return f"{roc_year}年{str(dt.month).zfill(2)}月{str(dt.day).zfill(2)}日"
+    except Exception:
+        return date_str
+
+
 @app.get("/health")
 async def health_check():
     """健康檢查"""
@@ -323,18 +354,54 @@ async def generate_pdf(request: GenerateRequest):
         elif request.contract_data:
             # 合約
             data = request.contract_data
+
+            # 處理新舊欄位兼容
+            monthly_rent = data.monthly_rent or data.monthly_fee or 0
+            deposit = data.deposit_amount or data.deposit or 0
+            original_price = data.original_price or data.list_price or monthly_rent
+            party_b_name = data.company_name or data.representative_name or data.customer_name or ""
+            phone = data.phone or data.contact_phone or ""
+            email_addr = data.email or data.contact_email or ""
+            tax_id = data.company_tax_id or data.tax_id or ""
+            address = data.representative_address or data.company_address or ""
+
             template_data = {
                 **data.model_dump(),
-                "monthly_fee_formatted": format_currency(data.monthly_fee),
-                "deposit_formatted": format_currency(data.deposit),
-                "list_price_formatted": format_currency(data.list_price) if data.list_price else format_currency(data.monthly_fee),
+                # 格式化金額
+                "monthly_rent_formatted": format_currency(monthly_rent),
+                "monthly_fee_formatted": format_currency(monthly_rent),  # 向後兼容
+                "deposit_formatted": format_currency(deposit),
+                "deposit_amount_formatted": format_currency(deposit),
+                "original_price_formatted": format_currency(original_price),
+                "list_price_formatted": format_currency(original_price),  # 向後兼容
+                # 格式化日期
                 "start_date_formatted": format_date_chinese(data.start_date),
-                "end_date_formatted": format_date_chinese(data.end_date),
+                "start_date_roc": format_date_roc(data.start_date),
+                "end_date_formatted": format_date_chinese(data.end_date) if data.end_date else "",
+                "end_date_roc": format_date_roc(data.end_date) if data.end_date else "",
+                # 當天日期
                 "today": datetime.now().strftime("%Y年%m月%d日"),
                 "today_roc_year": str(datetime.now().year - 1911),
-                "today_month": str(datetime.now().month),
-                "today_day": str(datetime.now().day),
+                "today_month": str(datetime.now().month).zfill(2),
+                "today_day": str(datetime.now().day).zfill(2),
+                # 乙方（承租人）合併欄位
+                "party_b_name": party_b_name,
+                "party_b_phone": phone,
+                "party_b_email": email_addr,
+                "party_b_tax_id": tax_id,
+                "party_b_address": address,
             }
+
+            # 根據合約類型選擇模板
+            template_map = {
+                "virtual_office": "contract_virtual_office.html",
+                "office": "contract_office.html",
+                "flex_seat": "contract_flex_seat.html",
+                "coworking_fixed": "contract_coworking.html",
+                "coworking_flexible": "contract_coworking.html",
+            }
+            template_name = template_map.get(data.contract_type, "contract_coworking.html")
+
             doc_type = "contract"
             doc_id = data.contract_id
             doc_number = data.contract_number
