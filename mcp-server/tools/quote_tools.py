@@ -513,7 +513,7 @@ async def convert_quote_to_contract(
             "payment_cycle": payment_cycle,
             "payment_day": payment_day,
             "deposit": deposit_amount,  # 資料庫欄位是 deposit
-            "status": "pending",
+            "status": "pending_sign",  # 待簽約
             # 承租人資訊（存入合約表，觸發器會自動建立/關聯客戶）
             "company_name": company_name or quote.get("company_name"),
             "representative_name": representative_name or quote.get("customer_name"),
@@ -561,8 +561,8 @@ async def convert_quote_to_contract(
                 "start_date": contract_start,
                 "end_date": contract_end,
                 "monthly_rent": monthly_rent,
-                "deposit_amount": deposit_amount,
-                "status": "pending"
+                "deposit": deposit_amount,
+                "status": "pending_sign"
             },
             "quote_number": quote.get("quote_number")
         }
