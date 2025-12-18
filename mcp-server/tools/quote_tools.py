@@ -5,6 +5,7 @@ Hour Jungle CRM - Quote Tools
 
 import logging
 import json
+import calendar
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 
@@ -549,6 +550,15 @@ async def convert_quote_to_contract(
         # 合約建立後自動產生繳費記錄，方便財務追蹤
         payments_created = []
 
+        # 計算第一期繳費日期和期間
+        start_dt = datetime.fromisoformat(contract_start)
+        first_payment_period = start_dt.strftime("%Y-%m")  # 格式：2025-12
+
+        # 計算 due_date：使用 payment_day，若超過該月最後一天則用月底
+        last_day_of_month = calendar.monthrange(start_dt.year, start_dt.month)[1]
+        actual_payment_day = min(payment_day, last_day_of_month)
+        first_due_date = date(start_dt.year, start_dt.month, actual_payment_day).isoformat()
+
         # 7.1 押金記錄（如果有押金）
         if deposit_amount and deposit_amount > 0:
             deposit_payment = {
@@ -556,14 +566,14 @@ async def convert_quote_to_contract(
                 "customer_id": contract.get("customer_id"),
                 "branch_id": contract.get("branch_id") or quote.get("branch_id"),
                 "payment_type": "deposit",
-                "payment_period": "押金",
+                "payment_period": first_payment_period,  # 使用年月格式，與腳本一致
                 "amount": deposit_amount,
-                "due_date": contract_start,  # 押金在合約開始日到期
+                "due_date": first_due_date,  # 押金在第一期繳費日到期
                 "payment_status": "pending"
             }
             await postgrest_post("payments", deposit_payment)
             payments_created.append("押金")
-            logger.info(f"Created deposit payment for contract {contract['id']}")
+            logger.info(f"Created deposit payment for contract {contract['id']}, period: {first_payment_period}")
 
         # 7.2 第一期租金記錄
         if monthly_rent and monthly_rent > 0:
@@ -572,14 +582,14 @@ async def convert_quote_to_contract(
                 "customer_id": contract.get("customer_id"),
                 "branch_id": contract.get("branch_id") or quote.get("branch_id"),
                 "payment_type": "rent",
-                "payment_period": "第1期",
+                "payment_period": first_payment_period,  # 使用年月格式，與腳本一致
                 "amount": monthly_rent,
-                "due_date": contract_start,  # 第一期在合約開始日到期
+                "due_date": first_due_date,  # 第一期在繳費日到期
                 "payment_status": "pending"
             }
             await postgrest_post("payments", first_rent_payment)
             payments_created.append("第一期租金")
-            logger.info(f"Created first rent payment for contract {contract['id']}")
+            logger.info(f"Created first rent payment for contract {contract['id']}, period: {first_payment_period}")
 
         # 8. 更新報價單狀態為已轉換
         await postgrest_patch(

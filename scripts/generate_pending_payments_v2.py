@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 為活躍合約生成正確的待繳記錄
-根據合約開始日期和繳費週期計算繳費時間點
+
+繳費日期 (due_date) 計算邏輯：
+1. 優先使用合約表的 payment_day 欄位
+2. 若 payment_day 為空，fallback 到 start_date 的「日」
+3. 繳費月份根據 payment_cycle（monthly, annual, semi_annual 等）決定
 """
 
 import subprocess
@@ -17,7 +21,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 API_BASE = "https://auto.yourspce.org/api/db"
 
 
-def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_month):
+def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_month, contract_payment_day=None):
     """
     計算合約在指定月份的繳費日期
 
@@ -26,6 +30,7 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
         payment_cycle: 繳費週期 (monthly, annual, semi_annual, biennial, quarterly)
         target_year: 目標年份
         target_month: 目標月份
+        contract_payment_day: 合約設定的繳費日（優先使用）
 
     Returns:
         list of (due_date, amount_multiplier) 或空列表
@@ -38,9 +43,13 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
 
     results = []
 
+    # 優先使用合約設定的繳費日，否則用開始日期的「日」
+    base_payment_day = contract_payment_day if contract_payment_day else start_date.day
+
     if payment_cycle == 'monthly':
-        # 每月繳費，繳費日 = 合約開始日的「日」
-        payment_day = min(start_date.day, 28)  # 避免 29, 30, 31 在某些月份不存在
+        # 每月繳費，繳費日 = 合約設定的 payment_day
+        # 使用當月最後一天作為上限（例：設定31號，2月用28號）
+        payment_day = min(base_payment_day, target_end.day)
         try:
             due_date = date(target_year, target_month, payment_day)
         except ValueError:
@@ -52,9 +61,9 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
             results.append((due_date, 1))  # 1 個月租金
 
     elif payment_cycle == 'annual':
-        # 每年繳費，繳費日 = 合約開始日的「月/日」
+        # 每年繳費，繳費月份 = 合約開始月份，繳費日 = payment_day
         if start_date.month == target_month:
-            payment_day = min(start_date.day, 28)
+            payment_day = min(base_payment_day, target_end.day)
             try:
                 due_date = date(target_year, target_month, payment_day)
             except ValueError:
@@ -70,7 +79,7 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
         payment_months = [(start_month + i * 6 - 1) % 12 + 1 for i in range(2)]
 
         if target_month in payment_months:
-            payment_day = min(start_date.day, 28)
+            payment_day = min(base_payment_day, target_end.day)
             try:
                 due_date = date(target_year, target_month, payment_day)
             except ValueError:
@@ -85,7 +94,7 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
         payment_months = [(start_month + i * 3 - 1) % 12 + 1 for i in range(4)]
 
         if target_month in payment_months:
-            payment_day = min(start_date.day, 28)
+            payment_day = min(base_payment_day, target_end.day)
             try:
                 due_date = date(target_year, target_month, payment_day)
             except ValueError:
@@ -101,7 +110,7 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
             # 計算從開始日期到目標日期經過的月數
             months_diff = (target_year - start_date.year) * 12 + (target_month - start_date.month)
             if months_diff >= 0 and months_diff % 24 == 0:
-                payment_day = min(start_date.day, 28)
+                payment_day = min(base_payment_day, target_end.day)
                 try:
                     due_date = date(target_year, target_month, payment_day)
                 except ValueError:
@@ -116,7 +125,7 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
         if start_date.month == target_month:
             months_diff = (target_year - start_date.year) * 12 + (target_month - start_date.month)
             if months_diff >= 0 and months_diff % 36 == 0:
-                payment_day = min(start_date.day, 28)
+                payment_day = min(base_payment_day, target_end.day)
                 try:
                     due_date = date(target_year, target_month, payment_day)
                 except ValueError:
@@ -129,10 +138,10 @@ def get_payment_dates_in_period(start_date, payment_cycle, target_year, target_m
 
 
 def fetch_active_contracts():
-    """取得所有活躍合約"""
+    """取得所有活躍合約（包含 payment_day）"""
     result = subprocess.run([
         'curl', '-s',
-        f'{API_BASE}/contracts?select=id,customer_id,branch_id,start_date,monthly_rent,payment_cycle,status&status=eq.active&limit=500'
+        f'{API_BASE}/contracts?select=id,customer_id,branch_id,start_date,monthly_rent,payment_cycle,payment_day,status&status=eq.active&limit=500'
     ], capture_output=True, text=True)
     return json.loads(result.stdout)
 
@@ -198,14 +207,15 @@ def main():
         start_date = contract['start_date']
         monthly_rent = contract['monthly_rent']
         payment_cycle = contract.get('payment_cycle', 'monthly')
+        contract_payment_day = contract.get('payment_day')  # 合約設定的繳費日
 
         customer = customers.get(customer_id, {})
         customer_name = customer.get('name', 'Unknown')
         legacy_id = customer.get('legacy_id', '')
 
-        # 計算繳費日期
+        # 計算繳費日期（優先使用合約的 payment_day）
         payment_dates = get_payment_dates_in_period(
-            start_date, payment_cycle, target_year, target_month
+            start_date, payment_cycle, target_year, target_month, contract_payment_day
         )
 
         if not payment_dates:
@@ -243,7 +253,8 @@ def main():
                 'customer_name': customer_name,
                 'legacy_id': legacy_id,
                 'payment_cycle': payment_cycle,
-                'multiplier': multiplier
+                'multiplier': multiplier,
+                'payment_day': contract_payment_day or due_date.day  # 紀錄使用的繳費日
             })
 
     # 輸出統計
@@ -280,7 +291,7 @@ def main():
     sql_lines.append("-- ============================================================================")
     sql_lines.append(f"-- Hour Jungle CRM - {target_period} 待繳記錄生成（正確版）")
     sql_lines.append(f"-- 生成時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    sql_lines.append("-- 邏輯: 根據合約開始日期和繳費週期計算正確的繳費時間點")
+    sql_lines.append("-- 邏輯: 優先使用合約的 payment_day 欄位，否則用開始日期的「日」")
     sql_lines.append("-- ============================================================================")
     sql_lines.append("")
 
@@ -294,7 +305,7 @@ def main():
         sql = f"""INSERT INTO payments (contract_id, customer_id, branch_id, payment_type, payment_period, amount, due_date, payment_status)
 VALUES ({p['contract_id']}, {p['customer_id']}, {p['branch_id']}, '{p['payment_type']}', '{p['payment_period']}', {p['amount']}, '{p['due_date']}', '{p['payment_status']}')
 ON CONFLICT DO NOTHING;"""
-        sql_lines.append(f"-- {p['legacy_id']} {p['customer_name']} ({p['payment_cycle']}, x{p['multiplier']})")
+        sql_lines.append(f"-- {p['legacy_id']} {p['customer_name']} ({p['payment_cycle']}, x{p['multiplier']}, 繳費日:{p['payment_day']}號)")
         sql_lines.append(sql)
         total_amount += p['amount']
 
