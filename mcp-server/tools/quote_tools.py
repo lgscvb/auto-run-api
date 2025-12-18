@@ -60,6 +60,9 @@ async def postgrest_patch(endpoint: str, params: dict, data: dict) -> Any:
     }
     async with httpx.AsyncClient() as client:
         response = await client.patch(url, params=params, json=data, headers=headers, timeout=30.0)
+        if response.status_code >= 400:
+            logger.error(f"PostgREST PATCH error: {response.status_code} - {response.text}")
+            logger.error(f"Request params: {params}, data: {data}")
         response.raise_for_status()
         return response.json()
 
