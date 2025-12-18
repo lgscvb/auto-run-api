@@ -545,7 +545,43 @@ async def convert_quote_to_contract(
         contract_result = await postgrest_post("contracts", contract_data)
         contract = contract_result[0] if isinstance(contract_result, list) else contract_result
 
-        # 7. 更新報價單狀態為已轉換
+        # 7. 創建繳費記錄
+        # 合約建立後自動產生繳費記錄，方便財務追蹤
+        payments_created = []
+
+        # 7.1 押金記錄（如果有押金）
+        if deposit_amount and deposit_amount > 0:
+            deposit_payment = {
+                "contract_id": contract["id"],
+                "customer_id": contract.get("customer_id"),
+                "branch_id": contract.get("branch_id") or quote.get("branch_id"),
+                "payment_type": "deposit",
+                "payment_period": "押金",
+                "amount": deposit_amount,
+                "due_date": contract_start,  # 押金在合約開始日到期
+                "payment_status": "pending"
+            }
+            await postgrest_post("payments", deposit_payment)
+            payments_created.append("押金")
+            logger.info(f"Created deposit payment for contract {contract['id']}")
+
+        # 7.2 第一期租金記錄
+        if monthly_rent and monthly_rent > 0:
+            first_rent_payment = {
+                "contract_id": contract["id"],
+                "customer_id": contract.get("customer_id"),
+                "branch_id": contract.get("branch_id") or quote.get("branch_id"),
+                "payment_type": "rent",
+                "payment_period": "第1期",
+                "amount": monthly_rent,
+                "due_date": contract_start,  # 第一期在合約開始日到期
+                "payment_status": "pending"
+            }
+            await postgrest_post("payments", first_rent_payment)
+            payments_created.append("第一期租金")
+            logger.info(f"Created first rent payment for contract {contract['id']}")
+
+        # 8. 更新報價單狀態為已轉換
         await postgrest_patch(
             "quotes",
             {"id": f"eq.{quote_id}"},
@@ -555,9 +591,12 @@ async def convert_quote_to_contract(
             }
         )
 
+        # 組合回傳訊息
+        payments_msg = f"，已建立繳費記錄：{', '.join(payments_created)}" if payments_created else ""
+
         return {
             "success": True,
-            "message": f"報價單已成功轉換為合約",
+            "message": f"報價單已成功轉換為合約{payments_msg}",
             "contract": {
                 "id": contract["id"],
                 "contract_number": contract.get("contract_number"),
@@ -570,7 +609,8 @@ async def convert_quote_to_contract(
                 "deposit": deposit_amount,
                 "status": "pending_sign"
             },
-            "quote_number": quote.get("quote_number")
+            "quote_number": quote.get("quote_number"),
+            "payments_created": payments_created
         }
 
     except Exception as e:
