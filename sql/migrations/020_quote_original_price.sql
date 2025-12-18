@@ -57,4 +57,7 @@ LEFT JOIN customers c ON q.customer_id = c.id
 LEFT JOIN branches b ON q.branch_id = b.id
 ORDER BY q.created_at DESC;
 
+-- 授予 anon 角色查詢權限（DROP VIEW 後權限會遺失）
+GRANT SELECT ON v_quotes TO anon;
+
 COMMENT ON COLUMN quotes.original_price IS '服務原價（用於合約，例如營業登記原價 3000）';
