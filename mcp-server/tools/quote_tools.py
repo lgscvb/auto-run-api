@@ -44,6 +44,9 @@ async def postgrest_post(endpoint: str, data: dict) -> Any:
     }
     async with httpx.AsyncClient() as client:
         response = await client.post(url, json=data, headers=headers, timeout=30.0)
+        if response.status_code >= 400:
+            logger.error(f"PostgREST POST error: {response.status_code} - {response.text}")
+            logger.error(f"Request data: {data}")
         response.raise_for_status()
         return response.json()
 
