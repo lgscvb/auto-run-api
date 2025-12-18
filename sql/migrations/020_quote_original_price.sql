@@ -8,8 +8,11 @@
 -- 折扣後的價格會在 items 中的 unit_price 體現
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS original_price NUMERIC(10,2);
 
--- 更新視圖加入 original_price
-CREATE OR REPLACE VIEW v_quotes AS
+-- 先刪除舊視圖再重建（避免欄位順序衝突）
+DROP VIEW IF EXISTS v_quotes;
+
+-- 重建視圖加入 original_price
+CREATE VIEW v_quotes AS
 SELECT
     q.id,
     q.quote_number,
