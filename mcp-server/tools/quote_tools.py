@@ -171,6 +171,7 @@ async def create_quote(
     plan_name: str = None,
     contract_months: int = 12,
     proposed_start_date: str = None,
+    original_price: float = None,
     items: List[Dict] = None,
     discount_amount: float = 0,
     discount_note: str = None,
@@ -194,6 +195,7 @@ async def create_quote(
         plan_name: 方案名稱
         contract_months: 合約月數
         proposed_start_date: 預計開始日期
+        original_price: 服務原價（用於合約，例如營業登記原價 3000）
         items: 費用項目 [{name, quantity, unit_price, amount}]
         discount_amount: 折扣金額
         discount_note: 折扣說明
@@ -239,6 +241,8 @@ async def create_quote(
         data["plan_name"] = plan_name
     if proposed_start_date:
         data["proposed_start_date"] = proposed_start_date
+    if original_price:
+        data["original_price"] = original_price
     if discount_note:
         data["discount_note"] = discount_note
     if internal_notes:
