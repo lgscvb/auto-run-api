@@ -547,8 +547,7 @@ async def convert_quote_to_contract(
             {"id": f"eq.{quote_id}"},
             {
                 "status": "converted",
-                "converted_contract_id": contract["id"],
-                "converted_at": datetime.now().isoformat()
+                "converted_contract_id": contract["id"]
             }
         )
 
