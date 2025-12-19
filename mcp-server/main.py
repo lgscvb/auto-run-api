@@ -233,6 +233,12 @@ from tools.notification_tools import (
     set_postgrest_request as set_notification_postgrest
 )
 
+from tools.brain_tools import (
+    brain_save_knowledge,
+    brain_search_knowledge,
+    brain_list_categories
+)
+
 
 # ============================================================================
 # MCP Tool 定義
@@ -834,6 +840,36 @@ MCP_TOOLS = {
             "branch_id": {"type": "integer", "description": "場館ID", "default": 1}
         },
         "handler": floor_plan_preview_html
+    },
+
+    # Brain 知識庫工具
+    "brain_save_knowledge": {
+        "description": "儲存知識到 Brain RAG 知識庫。當對話中發現有價值的資訊（如法規規定、流程說明、價格資訊、常見問題答案）時使用此工具。",
+        "parameters": {
+            "content": {"type": "string", "description": "知識內容（至少 10 字）", "required": True},
+            "category": {
+                "type": "string",
+                "description": "分類：faq=常見問題, service_info=服務資訊, process=流程說明, regulation=法規規定, objection=異議處理, value_prop=價值主張, tactics=銷售技巧, customer_info=客戶資訊",
+                "default": "faq"
+            },
+            "sub_category": {"type": "string", "description": "子分類（如：公司登記、稅務、銀行開戶）", "optional": True},
+            "service_type": {"type": "string", "description": "適用服務：address_service, coworking, private_office, meeting_room", "optional": True}
+        },
+        "handler": brain_save_knowledge
+    },
+    "brain_search_knowledge": {
+        "description": "搜尋 Brain 知識庫，使用向量語意搜尋找出相關知識",
+        "parameters": {
+            "query": {"type": "string", "description": "搜尋關鍵字或問題", "required": True},
+            "top_k": {"type": "integer", "description": "回傳結果數量", "default": 5},
+            "category": {"type": "string", "description": "限定分類", "optional": True}
+        },
+        "handler": brain_search_knowledge
+    },
+    "brain_list_categories": {
+        "description": "列出 Brain 知識庫的所有分類及說明",
+        "parameters": {},
+        "handler": brain_list_categories
     }
 }
 
