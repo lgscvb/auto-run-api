@@ -159,14 +159,14 @@ async def get_notification_settings() -> Dict[str, Any]:
     """
     try:
         params = {
-            "key": "in.(auto_payment_reminder,auto_renewal_reminder,reminder_time,overdue_reminder_days)"
+            "setting_key": "in.(auto_payment_reminder,auto_renewal_reminder,reminder_time,overdue_reminder_days)"
         }
         result = await postgrest_request("GET", "system_settings", params=params)
 
         settings = {}
         for item in (result or []):
-            key = item.get("key")
-            value = item.get("value")
+            key = item.get("setting_key")
+            value = item.get("setting_value")
             # 轉換布林值
             if value in ("true", "false"):
                 value = value == "true"
@@ -211,8 +211,8 @@ async def update_notification_setting(
     try:
         await postgrest_request(
             "PATCH",
-            f"system_settings?key=eq.{key}",
-            data={"value": value, "updated_at": datetime.now().isoformat()},
+            f"system_settings?setting_key=eq.{key}",
+            data={"setting_value": value, "updated_at": datetime.now().isoformat()},
             headers={"Prefer": "return=representation"}
         )
 
