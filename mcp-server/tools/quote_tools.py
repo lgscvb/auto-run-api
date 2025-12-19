@@ -78,6 +78,82 @@ async def postgrest_delete(endpoint: str, params: dict) -> bool:
 
 
 # ============================================================================
+# 合約編號產生器
+# ============================================================================
+
+async def generate_contract_number(branch_id: int) -> str:
+    """
+    根據分館產生下一個合約編號
+
+    Args:
+        branch_id: 分館 ID
+            - 1: 大忠館 → DZ-XXX（3位數）
+            - 2: 環瑞館 → HR-VXX（2位數）
+
+    Returns:
+        新的合約編號
+    """
+    import re
+
+    if branch_id == 1:
+        # 大忠館：DZ-XXX 格式
+        prefix = "DZ-"
+        # 查詢現有最大編號
+        contracts = await postgrest_get(
+            "contracts",
+            {
+                "select": "contract_number",
+                "contract_number": "like.DZ-%",
+                "order": "contract_number.desc",
+                "limit": "100"
+            }
+        )
+
+        max_num = 0
+        for c in contracts:
+            cn = c.get("contract_number", "")
+            # 匹配 DZ-XXX 格式（可能有 -E 後綴表示已結束）
+            match = re.match(r"DZ-E?(\d+)", cn)
+            if match:
+                num = int(match.group(1))
+                if num > max_num:
+                    max_num = num
+
+        next_num = max_num + 1
+        return f"DZ-{next_num:03d}"
+
+    elif branch_id == 2:
+        # 環瑞館：HR-VXX 格式
+        prefix = "HR-V"
+        contracts = await postgrest_get(
+            "contracts",
+            {
+                "select": "contract_number",
+                "contract_number": "like.HR-V%",
+                "order": "contract_number.desc",
+                "limit": "50"
+            }
+        )
+
+        max_num = 0
+        for c in contracts:
+            cn = c.get("contract_number", "")
+            # 匹配 HR-VXX 格式
+            match = re.match(r"HR-V(\d+)", cn)
+            if match:
+                num = int(match.group(1))
+                if num > max_num:
+                    max_num = num
+
+        next_num = max_num + 1
+        return f"HR-V{next_num:02d}"
+
+    else:
+        # 未知分館，使用通用格式
+        return f"HJ-{datetime.now().strftime('%Y%m%d')}-{branch_id}"
+
+
+# ============================================================================
 # 報價單工具
 # ============================================================================
 
@@ -511,8 +587,13 @@ async def convert_quote_to_contract(
 
         # 6. 建立合約（草稿狀態）
         # 注意：不傳 customer_id，讓觸發器根據統編/電話自動查找或建立
+        branch_id = quote.get("branch_id")
+        contract_number = await generate_contract_number(branch_id)
+        logger.info(f"Generated contract number: {contract_number} for branch {branch_id}")
+
         contract_data = {
-            "branch_id": quote.get("branch_id"),
+            "contract_number": contract_number,
+            "branch_id": branch_id,
             "contract_type": quote.get("contract_type", "virtual_office"),
             "plan_name": quote.get("plan_name"),
             "start_date": contract_start,
