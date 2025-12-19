@@ -222,6 +222,17 @@ from tools.line_webhook import (
     verify_signature
 )
 
+from tools.notification_tools import (
+    log_notification,
+    get_notification_logs,
+    get_today_notifications,
+    get_notification_settings,
+    update_notification_setting,
+    trigger_daily_reminders,
+    get_monthly_reminders_summary,
+    set_postgrest_request as set_notification_postgrest
+)
+
 
 # ============================================================================
 # MCP Tool 定義
@@ -886,6 +897,10 @@ async def lifespan(app: FastAPI):
     set_booking_postgrest(postgrest_request)
     logger.info("Booking tools initialized")
 
+    # 設置通知工具的 postgrest_request
+    set_notification_postgrest(postgrest_request)
+    logger.info("Notification tools initialized")
+
     # 啟動排程器
     scheduler.add_job(send_booking_reminders, 'interval', minutes=10)
     scheduler.start()
@@ -1284,6 +1299,75 @@ class LineForwardRequest(BaseModel):
     message_text: str
     event_type: str = "message"  # message, postback
     postback_data: str = None    # postback 時使用
+
+
+# ============================================================================
+# 排程 API Endpoints
+# ============================================================================
+
+class SchedulerTriggerRequest(BaseModel):
+    """排程觸發請求"""
+    dry_run: bool = True
+
+
+@app.post("/api/scheduler/daily-reminders")
+async def api_trigger_daily_reminders(request: SchedulerTriggerRequest = None):
+    """
+    觸發每日自動提醒
+    由 Cloud Scheduler 呼叫，或手動測試
+    """
+    dry_run = request.dry_run if request else True
+    result = await trigger_daily_reminders(dry_run=dry_run)
+    return result
+
+
+@app.get("/api/notifications/settings")
+async def api_get_notification_settings():
+    """取得通知設定"""
+    result = await get_notification_settings()
+    return result
+
+
+class NotificationSettingRequest(BaseModel):
+    """更新通知設定請求"""
+    key: str
+    value: str
+
+
+@app.patch("/api/notifications/settings")
+async def api_update_notification_setting(request: NotificationSettingRequest):
+    """更新通知設定"""
+    result = await update_notification_setting(request.key, request.value)
+    return result
+
+
+@app.get("/api/notifications/logs")
+async def api_get_notification_logs(
+    notification_type: str = None,
+    customer_id: int = None,
+    limit: int = 50
+):
+    """取得通知記錄"""
+    result = await get_notification_logs(
+        notification_type=notification_type,
+        customer_id=customer_id,
+        limit=limit
+    )
+    return result
+
+
+@app.get("/api/notifications/today")
+async def api_get_today_notifications():
+    """取得今日通知統計"""
+    result = await get_today_notifications()
+    return result
+
+
+@app.get("/api/notifications/monthly-summary")
+async def api_get_monthly_summary():
+    """取得當月催繳/續約統計"""
+    result = await get_monthly_reminders_summary()
+    return result
 
 
 # ============================================================================

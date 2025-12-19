@@ -316,6 +316,22 @@ async def send_payment_reminder(
         result = await send_line_push(payment["line_user_id"], messages)
 
         if result["success"]:
+            # 記錄通知到 notification_logs
+            try:
+                from tools.notification_tools import log_notification
+                await log_notification(
+                    notification_type="payment_reminder",
+                    customer_id=payment.get("customer_id"),
+                    payment_id=payment_id,
+                    recipient_name=customer_name,
+                    recipient_line_id=payment.get("line_user_id"),
+                    message_content=message[:200],  # 截取前 200 字
+                    status="sent",
+                    triggered_by="manual"
+                )
+            except Exception as log_err:
+                logger.warning(f"記錄通知失敗（不影響發送）: {log_err}")
+
             return {
                 "success": True,
                 "message": f"已發送{reminder_type}提醒給 {customer_name}",
@@ -389,6 +405,22 @@ async def send_renewal_reminder(
         result = await send_line_push(renewal["line_user_id"], messages)
 
         if result["success"]:
+            # 記錄通知到 notification_logs
+            try:
+                from tools.notification_tools import log_notification
+                await log_notification(
+                    notification_type="renewal_reminder",
+                    customer_id=renewal.get("customer_id"),
+                    contract_id=contract_id,
+                    recipient_name=customer_name,
+                    recipient_line_id=renewal.get("line_user_id"),
+                    message_content=message[:200],
+                    status="sent",
+                    triggered_by="manual"
+                )
+            except Exception as log_err:
+                logger.warning(f"記錄通知失敗（不影響發送）: {log_err}")
+
             return {
                 "success": True,
                 "message": f"已發送續約提醒給 {customer_name}",
