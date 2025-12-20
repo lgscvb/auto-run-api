@@ -79,6 +79,9 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+    # 讓 Nginx 可以連到 host network 上的 MCP Server
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - hj-network
 
