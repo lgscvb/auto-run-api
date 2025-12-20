@@ -244,6 +244,7 @@ from tools.brain_tools import (
 )
 
 from tools.calendar_tools import (
+    calendar_create,
     calendar_create_signing_appointment,
     calendar_list_signing_appointments
 )
@@ -927,6 +928,14 @@ MCP_TOOLS = {
     },
 
     # Calendar 工具
+    "calendar_create": {
+        "description": "建立新的 Google Calendar（用於建立專屬簽約行事曆）",
+        "parameters": {
+            "name": {"type": "string", "description": "行事曆名稱", "required": True},
+            "description": {"type": "string", "description": "行事曆描述", "optional": True}
+        },
+        "handler": calendar_create
+    },
     "calendar_create_signing_appointment": {
         "description": "建立簽約行程到 Google Calendar。當客戶確認簽約時間時使用。",
         "parameters": {

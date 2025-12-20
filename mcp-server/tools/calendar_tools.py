@@ -213,6 +213,61 @@ async def calendar_create_signing_appointment(
         }
 
 
+calendar_create_schema = {
+    "name": "calendar_create",
+    "description": "建立新的 Google Calendar（用於建立專屬簽約行事曆）",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "行事曆名稱（如：Hour Jungle 簽約行程）"
+            },
+            "description": {
+                "type": "string",
+                "description": "行事曆描述（選填）"
+            }
+        },
+        "required": ["name"]
+    }
+}
+
+
+async def calendar_create(name: str, description: str = None) -> dict:
+    """建立新的 Google Calendar"""
+    try:
+        calendar_service = get_calendar_service()
+        result = calendar_service.create_calendar(
+            summary=name,
+            description=description
+        )
+
+        if result.get("success"):
+            calendar_id = result.get("calendar_id")
+            return {
+                "success": True,
+                "message": f"已建立行事曆：{name}",
+                "calendar_id": calendar_id,
+                "next_steps": [
+                    f"1. 在 Google Calendar 將此行事曆分享給需要查看的人",
+                    f"2. 設定環境變數 SIGNING_CALENDAR_ID={calendar_id}",
+                    f"3. 重啟 MCP Server 容器"
+                ]
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"建立行事曆失敗：{result.get('error')}"
+            }
+
+    except Exception as e:
+        logger.error(f"calendar_create error: {e}")
+        return {
+            "success": False,
+            "message": f"建立行事曆失敗：{str(e)}"
+        }
+
+
 calendar_list_signing_appointments_schema = {
     "name": "calendar_list_signing_appointments",
     "description": "列出即將到來的簽約行程",
@@ -274,6 +329,10 @@ async def calendar_list_signing_appointments(days_ahead: int = 7) -> dict:
 # =============================================================================
 
 CALENDAR_TOOLS = [
+    {
+        "schema": calendar_create_schema,
+        "handler": calendar_create
+    },
     {
         "schema": calendar_create_signing_appointment_schema,
         "handler": calendar_create_signing_appointment
