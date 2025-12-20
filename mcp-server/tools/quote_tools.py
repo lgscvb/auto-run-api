@@ -157,6 +157,216 @@ async def generate_contract_number(branch_id: int) -> str:
 # 報價單工具
 # ============================================================================
 
+# ============================================================================
+# 服務價格表工具
+# ============================================================================
+
+async def list_service_plans(
+    category: str = None,
+    is_active: bool = True
+) -> Dict[str, Any]:
+    """
+    取得服務價格列表
+
+    Args:
+        category: 分類篩選 (空間服務/登記服務/代辦服務)
+        is_active: 是否只顯示啟用的服務
+
+    Returns:
+        服務列表，按分類和排序
+    """
+    params = {"order": "sort_order.asc"}
+
+    if category:
+        params["category"] = f"eq.{category}"
+    if is_active is not None:
+        params["is_active"] = f"eq.{is_active}"
+
+    try:
+        plans = await postgrest_get("service_plans", params)
+
+        # 按分類分組
+        by_category = {}
+        for plan in plans:
+            cat = plan.get("category", "其他")
+            if cat not in by_category:
+                by_category[cat] = []
+            by_category[cat].append(plan)
+
+        return {
+            "count": len(plans),
+            "by_category": by_category,
+            "plans": plans
+        }
+    except Exception as e:
+        logger.error(f"list_service_plans error: {e}")
+        raise Exception(f"取得服務價格列表失敗: {e}")
+
+
+async def get_service_plan(code: str) -> Dict[str, Any]:
+    """
+    根據代碼取得服務方案
+
+    Args:
+        code: 服務代碼 (如 virtual_office_2year)
+
+    Returns:
+        服務方案詳情
+    """
+    try:
+        plans = await postgrest_get("service_plans", {"code": f"eq.{code}"})
+        if not plans:
+            return {"found": False, "message": f"找不到服務代碼: {code}"}
+
+        return {
+            "found": True,
+            "plan": plans[0]
+        }
+    except Exception as e:
+        logger.error(f"get_service_plan error: {e}")
+        raise Exception(f"取得服務方案失敗: {e}")
+
+
+async def create_quote_from_service_plans(
+    branch_id: int,
+    service_codes: List[str],
+    customer_name: str = None,
+    customer_phone: str = None,
+    customer_email: str = None,
+    company_name: str = None,
+    contract_months: int = None,
+    discount_amount: float = 0,
+    discount_note: str = None,
+    valid_days: int = 30,
+    internal_notes: str = None,
+    customer_notes: str = None,
+    line_user_id: str = None
+) -> Dict[str, Any]:
+    """
+    根據服務代碼建立報價單
+
+    自動從 service_plans 表取得價格資訊，建立報價單項目
+
+    Args:
+        branch_id: 場館ID
+        service_codes: 服務代碼列表 (如 ['virtual_office_2year', 'company_setup'])
+        customer_name: 客戶姓名
+        customer_phone: 客戶電話
+        customer_email: 客戶Email
+        company_name: 公司名稱
+        contract_months: 合約月數（覆蓋預設值）
+        discount_amount: 折扣金額
+        discount_note: 折扣說明
+        valid_days: 有效天數
+        internal_notes: 內部備註
+        customer_notes: 給客戶的備註
+        line_user_id: LINE User ID
+
+    Returns:
+        新建報價單
+    """
+    try:
+        # 1. 取得所有服務方案
+        items = []
+        total_deposit = 0
+        primary_contract_type = "virtual_office"
+        primary_plan_name = None
+        default_contract_months = 12
+
+        for code in service_codes:
+            plan_result = await get_service_plan(code)
+            if not plan_result.get("found"):
+                logger.warning(f"找不到服務代碼: {code}，跳過")
+                continue
+
+            plan = plan_result["plan"]
+
+            # 計算金額
+            unit_price = float(plan.get("unit_price", 0))
+            quantity = 1
+
+            # 根據計費方式計算
+            unit = plan.get("unit", "月")
+            billing_cycle = plan.get("billing_cycle", "monthly")
+
+            # 如果是月租，根據合約月數計算
+            if unit == "月" and billing_cycle in ["monthly", "semi_annual", "annual"]:
+                if contract_months:
+                    quantity = contract_months
+                elif plan.get("min_duration"):
+                    # 從最低租期推算
+                    if "2年" in plan.get("min_duration", ""):
+                        quantity = 24
+                        default_contract_months = 24
+                    elif "1年" in plan.get("min_duration", ""):
+                        quantity = 12
+                        default_contract_months = 12
+
+            item = {
+                "name": plan.get("name"),
+                "code": code,
+                "quantity": quantity,
+                "unit": unit,
+                "unit_price": unit_price,
+                "amount": unit_price * quantity
+            }
+            items.append(item)
+
+            # 累計押金
+            deposit = float(plan.get("deposit", 0))
+            if deposit > 0:
+                total_deposit += deposit
+
+            # 設定主要方案名稱（取第一個）
+            if not primary_plan_name:
+                primary_plan_name = plan.get("name")
+                # 推斷合約類型
+                if "借址" in plan.get("name", "") or "登記" in plan.get("name", ""):
+                    primary_contract_type = "virtual_office"
+                elif "辦公室" in plan.get("name", ""):
+                    primary_contract_type = "private_office"
+                elif "會議室" in plan.get("name", ""):
+                    primary_contract_type = "meeting_room"
+                elif "共享" in plan.get("name", ""):
+                    primary_contract_type = "coworking"
+
+        if not items:
+            return {
+                "success": False,
+                "message": "沒有有效的服務項目"
+            }
+
+        # 2. 使用現有的 create_quote 函數建立報價單
+        result = await create_quote(
+            branch_id=branch_id,
+            customer_name=customer_name,
+            customer_phone=customer_phone,
+            customer_email=customer_email,
+            company_name=company_name,
+            contract_type=primary_contract_type,
+            plan_name=primary_plan_name,
+            contract_months=contract_months or default_contract_months,
+            items=items,
+            discount_amount=discount_amount,
+            discount_note=discount_note,
+            deposit_amount=total_deposit,
+            valid_days=valid_days,
+            internal_notes=internal_notes,
+            customer_notes=customer_notes,
+            line_user_id=line_user_id
+        )
+
+        if result.get("success"):
+            result["service_plans_used"] = service_codes
+            result["message"] = f"報價單建立成功，包含 {len(items)} 項服務"
+
+        return result
+
+    except Exception as e:
+        logger.error(f"create_quote_from_service_plans error: {e}")
+        raise Exception(f"建立報價單失敗: {e}")
+
+
 async def list_quotes(
     branch_id: int = None,
     status: str = None,

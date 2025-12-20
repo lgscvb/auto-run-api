@@ -167,7 +167,10 @@ from tools.quote_tools import (
     delete_quote,
     convert_quote_to_contract,
     quote_generate_pdf,
-    send_quote_to_line
+    send_quote_to_line,
+    list_service_plans,
+    get_service_plan,
+    create_quote_from_service_plans
 )
 
 from tools.invoice_tools import (
@@ -572,6 +575,42 @@ MCP_TOOLS = {
             "line_user_id": {"type": "string", "description": "LINE User ID", "required": True}
         },
         "handler": send_quote_to_line
+    },
+
+    # 服務價格表工具
+    "service_plan_list": {
+        "description": "取得服務價格列表（共享空間、獨立辦公室、會議室、借址登記、代辦服務等）",
+        "parameters": {
+            "category": {"type": "string", "description": "分類篩選 (空間服務/登記服務/代辦服務)", "optional": True},
+            "is_active": {"type": "boolean", "description": "是否只顯示啟用的服務", "default": True}
+        },
+        "handler": list_service_plans
+    },
+    "service_plan_get": {
+        "description": "根據代碼取得服務方案詳情",
+        "parameters": {
+            "code": {"type": "string", "description": "服務代碼 (如 virtual_office_2year, company_setup)", "required": True}
+        },
+        "handler": get_service_plan
+    },
+    "quote_create_from_service_plans": {
+        "description": "根據服務代碼建立報價單，自動從價格表取得價格資訊",
+        "parameters": {
+            "branch_id": {"type": "integer", "description": "場館ID", "required": True},
+            "service_codes": {"type": "array", "description": "服務代碼列表 (如 ['virtual_office_2year', 'company_setup'])", "required": True},
+            "customer_name": {"type": "string", "description": "客戶姓名", "optional": True},
+            "customer_phone": {"type": "string", "description": "客戶電話", "optional": True},
+            "customer_email": {"type": "string", "description": "客戶Email", "optional": True},
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "contract_months": {"type": "integer", "description": "合約月數（覆蓋預設值）", "optional": True},
+            "discount_amount": {"type": "number", "description": "折扣金額", "default": 0},
+            "discount_note": {"type": "string", "description": "折扣說明", "optional": True},
+            "valid_days": {"type": "integer", "description": "有效天數", "default": 30},
+            "internal_notes": {"type": "string", "description": "內部備註", "optional": True},
+            "customer_notes": {"type": "string", "description": "給客戶的備註", "optional": True},
+            "line_user_id": {"type": "string", "description": "LINE User ID（來自 Brain 詢問）", "optional": True}
+        },
+        "handler": create_quote_from_service_plans
     },
 
     # 發票工具
