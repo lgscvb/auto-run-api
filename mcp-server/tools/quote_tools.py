@@ -308,7 +308,8 @@ async def create_quote_from_service_plans(
                 "quantity": quantity,
                 "unit": unit,
                 "unit_price": unit_price,
-                "amount": unit_price * quantity
+                "amount": unit_price * quantity,
+                "revenue_type": plan.get("revenue_type", "own")  # own=自己收款, referral=代辦服務
             }
             items.append(item)
 
