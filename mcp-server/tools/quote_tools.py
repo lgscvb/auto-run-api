@@ -1095,11 +1095,7 @@ async def send_quote_to_line(
 
         quote = quotes[0]
 
-        # 2. 生成 PDF URL
-        pdf_result = await quote_generate_pdf(quote_id)
-        pdf_url = pdf_result.get("pdf_url") if pdf_result.get("success") else None
-
-        # 3. 取得報價單資訊
+        # 2. 取得報價單資訊（PDF 改由前端生成，不在此處調用）
         quote_number = quote.get("quote_number", f"Q-{quote_id}")
         plan_name = quote.get("plan_name", "報價方案")
         total_amount = quote.get("total_amount", 0)
@@ -1196,17 +1192,8 @@ async def send_quote_to_line(
                     "spacing": "sm",
                     "contents": [
                         {
-                            "type": "button",
-                            "style": "primary",
-                            "color": "#2d5a27",
-                            "action": {
-                                "type": "uri",
-                                "label": "查看完整報價單 PDF",
-                                "uri": pdf_url or "https://hourjungle.com"
-                            }
-                        } if pdf_url else {
                             "type": "text",
-                            "text": "如需完整報價單，請聯繫我們",
+                            "text": "如需完整報價單 PDF，請聯繫我們索取",
                             "size": "xs",
                             "color": "#999999",
                             "align": "center"
@@ -1250,8 +1237,7 @@ async def send_quote_to_line(
                 "message": f"報價單 {quote_number} 已發送給 {customer_name}",
                 "quote_id": quote_id,
                 "quote_number": quote_number,
-                "line_user_id": line_user_id,
-                "pdf_url": pdf_url
+                "line_user_id": line_user_id
             }
         else:
             return {
