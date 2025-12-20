@@ -507,7 +507,8 @@ MCP_TOOLS = {
             "deposit_amount": {"type": "number", "description": "押金", "default": 0},
             "valid_days": {"type": "integer", "description": "有效天數", "default": 30},
             "internal_notes": {"type": "string", "description": "內部備註", "optional": True},
-            "customer_notes": {"type": "string", "description": "給客戶的備註", "optional": True}
+            "customer_notes": {"type": "string", "description": "給客戶的備註", "optional": True},
+            "line_user_id": {"type": "string", "description": "LINE User ID（來自 Brain 詢問）", "optional": True}
         },
         "handler": create_quote
     },

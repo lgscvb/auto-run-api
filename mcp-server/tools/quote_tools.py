@@ -256,7 +256,8 @@ async def create_quote(
     valid_days: int = 30,
     internal_notes: str = None,
     customer_notes: str = None,
-    created_by: str = None
+    created_by: str = None,
+    line_user_id: str = None
 ) -> Dict[str, Any]:
     """
     建立報價單
@@ -328,6 +329,8 @@ async def create_quote(
         data["customer_notes"] = customer_notes
     if created_by:
         data["created_by"] = created_by
+    if line_user_id:
+        data["line_user_id"] = line_user_id
 
     try:
         result = await postgrest_post("quotes", data)
