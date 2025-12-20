@@ -792,10 +792,33 @@ async def convert_quote_to_contract(
         else:
             contract_end = end_date
 
-        # 5. 計算金額（使用提供的值或從報價單推算）
+        # 5. 計算金額（使用提供的值或從報價單 items 正確推算）
         if monthly_rent is None:
-            total_amount = quote.get("total_amount", 0)
-            monthly_rent = round(total_amount / contract_months) if contract_months > 0 else total_amount
+            # 從 items 中找出月租類型的 own 項目
+            items_raw = quote.get("items", [])
+            if isinstance(items_raw, str):
+                items_raw = json.loads(items_raw)
+
+            # 只計算 own 項目（非 referral）且為月租的項目
+            monthly_own_items = [
+                item for item in items_raw
+                if item.get("revenue_type") != "referral"
+                and item.get("billing_cycle") not in [None, "one_time"]
+            ]
+
+            if monthly_own_items:
+                # 月租金 = 所有月租項目的 unit_price 總和
+                monthly_rent = sum(float(item.get("unit_price", 0)) for item in monthly_own_items)
+            else:
+                # 如果沒有明確的月租項目，fallback 到舊邏輯但只計算 own 項目
+                own_items = [
+                    item for item in items_raw
+                    if item.get("revenue_type") != "referral"
+                ]
+                own_total = sum(float(item.get("amount", 0)) for item in own_items)
+                monthly_rent = round(own_total / contract_months) if contract_months > 0 else own_total
+
+            logger.info(f"Calculated monthly_rent from items: {monthly_rent}")
 
         if deposit_amount is None:
             deposit_amount = quote.get("deposit_amount", 0)
