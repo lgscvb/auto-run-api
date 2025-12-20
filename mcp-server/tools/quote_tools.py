@@ -1097,17 +1097,149 @@ async def send_quote_to_line(
 
         quote = quotes[0]
 
-        # 2. 取得報價單資訊（PDF 改由前端生成，不在此處調用）
+        # 2. 取得報價單資訊
         quote_number = quote.get("quote_number", f"Q-{quote_id}")
         plan_name = quote.get("plan_name", "報價方案")
-        total_amount = quote.get("total_amount", 0)
         deposit_amount = quote.get("deposit_amount", 0)
         valid_until = quote.get("valid_until", "")
         branch_name = quote.get("branch_name", "Hour Jungle")
         customer_name = quote.get("customer_name", "貴賓")
+        items = quote.get("items", []) or []
 
-        # 4. 準備 LINE 訊息
-        # 使用 Flex Message 呈現報價單摘要
+        # 3. 分離簽約費用與代辦服務
+        own_items = [item for item in items if item.get("revenue_type") != "referral"]
+        referral_items = [item for item in items if item.get("revenue_type") == "referral"]
+
+        # 計算簽約應付金額（自己收款的項目）
+        own_total = sum(float(item.get("amount", 0)) for item in own_items)
+        sign_total = own_total + float(deposit_amount)
+
+        # 計算代辦服務金額
+        referral_total = sum(float(item.get("amount", 0)) for item in referral_items)
+
+        # 4. 建構 Flex Message body 內容
+        body_contents = [
+            # 報價單號
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                    {"type": "text", "text": "報價單號", "size": "sm", "color": "#888888", "flex": 1},
+                    {"type": "text", "text": quote_number, "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
+                ]
+            },
+            # 方案
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                    {"type": "text", "text": "方案", "size": "sm", "color": "#888888", "flex": 1},
+                    {"type": "text", "text": plan_name[:20] + ("..." if len(plan_name) > 20 else ""), "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
+                ]
+            },
+        ]
+
+        # 簽約應付款項區塊
+        if own_items or deposit_amount > 0:
+            body_contents.append({"type": "separator", "margin": "lg"})
+            body_contents.append({
+                "type": "text",
+                "text": "【簽約應付款項】",
+                "size": "sm",
+                "color": "#2d5a27",
+                "weight": "bold",
+                "margin": "lg"
+            })
+
+            # 列出自己收款的項目
+            for item in own_items:
+                item_name = item.get("name", "")
+                item_amount = float(item.get("amount", 0))
+                body_contents.append({
+                    "type": "box",
+                    "layout": "horizontal",
+                    "margin": "sm",
+                    "contents": [
+                        {"type": "text", "text": item_name[:15] + ("..." if len(item_name) > 15 else ""), "size": "xs", "color": "#666666", "flex": 2},
+                        {"type": "text", "text": f"${item_amount:,.0f}", "size": "xs", "color": "#333333", "flex": 1, "align": "end"}
+                    ]
+                })
+
+            # 押金
+            if deposit_amount > 0:
+                body_contents.append({
+                    "type": "box",
+                    "layout": "horizontal",
+                    "margin": "sm",
+                    "contents": [
+                        {"type": "text", "text": "押金", "size": "xs", "color": "#666666", "flex": 2},
+                        {"type": "text", "text": f"${deposit_amount:,.0f}", "size": "xs", "color": "#333333", "flex": 1, "align": "end"}
+                    ]
+                })
+
+            # 簽約應付合計
+            body_contents.append({
+                "type": "box",
+                "layout": "horizontal",
+                "margin": "md",
+                "contents": [
+                    {"type": "text", "text": "簽約應付合計", "size": "md", "color": "#2d5a27", "weight": "bold", "flex": 2},
+                    {"type": "text", "text": f"${sign_total:,.0f}", "size": "lg", "color": "#2d5a27", "weight": "bold", "flex": 1, "align": "end"}
+                ]
+            })
+
+        # 代辦服務區塊（如有）
+        if referral_items:
+            body_contents.append({"type": "separator", "margin": "lg"})
+            body_contents.append({
+                "type": "text",
+                "text": "【代辦服務】",
+                "size": "sm",
+                "color": "#666666",
+                "weight": "bold",
+                "margin": "lg"
+            })
+            body_contents.append({
+                "type": "text",
+                "text": "費用於服務完成後收取",
+                "size": "xxs",
+                "color": "#999999",
+                "margin": "xs"
+            })
+
+            for item in referral_items:
+                item_name = item.get("name", "")
+                billing_cycle = item.get("billing_cycle", "one_time")
+                unit_price = float(item.get("unit_price", 0))
+                item_amount = float(item.get("amount", 0))
+
+                # 月繳服務顯示「每月金額」，一次性顯示「總金額」
+                if billing_cycle != "one_time" and unit_price > 0:
+                    display_amount = f"${unit_price:,.0f}/月"
+                else:
+                    display_amount = f"${item_amount:,.0f}"
+
+                body_contents.append({
+                    "type": "box",
+                    "layout": "horizontal",
+                    "margin": "sm",
+                    "contents": [
+                        {"type": "text", "text": item_name[:15] + ("..." if len(item_name) > 15 else ""), "size": "xs", "color": "#666666", "flex": 2},
+                        {"type": "text", "text": display_amount, "size": "xs", "color": "#666666", "flex": 1, "align": "end"}
+                    ]
+                })
+
+        # 有效期限
+        body_contents.append({
+            "type": "text",
+            "text": f"報價有效期限：{valid_until}",
+            "size": "xs",
+            "color": "#999999",
+            "margin": "lg",
+            "align": "center"
+        })
+
+        # 5. 組裝 Flex Message
         flex_message = {
             "type": "flex",
             "altText": f"Hour Jungle 報價單 {quote_number}",
@@ -1142,50 +1274,7 @@ async def send_quote_to_line(
                     "layout": "vertical",
                     "paddingAll": "15px",
                     "spacing": "md",
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": "報價單號", "size": "sm", "color": "#888888", "flex": 1},
-                                {"type": "text", "text": quote_number, "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
-                            ]
-                        },
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": "方案", "size": "sm", "color": "#888888", "flex": 1},
-                                {"type": "text", "text": plan_name, "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
-                            ]
-                        },
-                        {"type": "separator", "margin": "lg"},
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "margin": "lg",
-                            "contents": [
-                                {"type": "text", "text": "總金額", "size": "md", "color": "#333333", "weight": "bold", "flex": 1},
-                                {"type": "text", "text": f"${total_amount:,.0f}", "size": "lg", "color": "#2d5a27", "weight": "bold", "flex": 2, "align": "end"}
-                            ]
-                        },
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": "押金", "size": "sm", "color": "#888888", "flex": 1},
-                                {"type": "text", "text": f"${deposit_amount:,.0f}", "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
-                            ]
-                        },
-                        {
-                            "type": "text",
-                            "text": f"報價有效期限：{valid_until}",
-                            "size": "xs",
-                            "color": "#999999",
-                            "margin": "lg",
-                            "align": "center"
-                        }
-                    ]
+                    "contents": body_contents
                 },
                 "footer": {
                     "type": "box",
@@ -1194,11 +1283,14 @@ async def send_quote_to_line(
                     "spacing": "sm",
                     "contents": [
                         {
-                            "type": "text",
-                            "text": "如需完整報價單 PDF，請聯繫我們索取",
-                            "size": "xs",
-                            "color": "#999999",
-                            "align": "center"
+                            "type": "button",
+                            "action": {
+                                "type": "uri",
+                                "label": "查看完整報價單",
+                                "uri": f"https://hj.yourspce.org/quote/{quote_number}"
+                            },
+                            "style": "primary",
+                            "color": "#2d5a27"
                         },
                         {
                             "type": "text",
