@@ -1638,6 +1638,67 @@ class AIChatResponse(BaseModel):
     tool_calls: List[dict] = []
 
 
+# ============================================================================
+# RAG 知識搜尋
+# ============================================================================
+
+BRAIN_API_URL = os.getenv("BRAIN_API_URL", "https://brain.yourspce.org")
+
+async def search_brain_knowledge(query: str, top_k: int = 3) -> str:
+    """
+    搜尋 Brain 知識庫，回傳相關知識作為 context
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{BRAIN_API_URL}/api/knowledge/search",
+                json={"query": query, "top_k": top_k},
+                timeout=10.0
+            )
+
+            if response.status_code == 200:
+                results = response.json()
+                if results:
+                    knowledge_text = "\n".join([
+                        f"- {r.get('content', '')}"
+                        for r in results
+                        if r.get('similarity', 0) > 0.5
+                    ])
+                    if knowledge_text:
+                        return f"\n\n## 相關知識參考\n{knowledge_text}"
+            return ""
+    except Exception as e:
+        logger.warning(f"Brain knowledge search failed: {e}")
+        return ""
+
+
+# CRM 系統使用教學（內建知識）
+CRM_USAGE_GUIDE = """
+## CRM 系統使用教學
+
+### 頁面功能說明
+1. **儀表板** - 總覽今日待辦、逾期款項、續約提醒
+2. **客戶管理** - 搜尋、新增、編輯客戶資料
+3. **合約管理** - 查看所有合約、建立新合約、續約處理
+4. **繳費管理** - 記錄繳費、撤銷繳費、檢視繳費歷史
+5. **發票管理** - 開立電子發票、作廢、折讓（整合光貿 API）
+6. **報表中心** - 營收報表、佣金報表、客戶統計
+7. **會議室預約** - 管理會議室預約
+8. **平面圖** - 查看/編輯座位配置
+9. **AI 助手** - 就是我！用自然語言操作 CRM
+
+### 常見操作
+- **記錄繳費**：在繳費管理頁面，找到對應的待繳記錄，點擊「記錄繳費」
+- **發送催繳**：在儀表板的逾期款項區塊，點擊「催繳」按鈕
+- **開立發票**：在發票管理頁面，找到已付款但未開發票的記錄，點擊「開立」
+- **續約提醒**：在續約管理頁面，可批次發送 LINE 續約提醒
+
+### 注意事項
+- 發票開立後無法修改，只能作廢重開
+- 繳費記錄撤銷需要填寫原因
+- LINE 訊息發送需要客戶已綁定 LINE
+"""
+
 # 系統提示詞
 CRM_SYSTEM_PROMPT = """你是 Hour Jungle CRM 的智能助手，專門協助員工管理客戶、合約、繳費等事務。
 
@@ -1707,7 +1768,7 @@ async def list_ai_models():
 
 @app.post("/ai/chat")
 async def ai_chat(request: AIChatRequest):
-    """AI 聊天端點 - 使用 OpenRouter"""
+    """AI 聊天端點 - 使用 OpenRouter + RAG"""
     try:
         client = get_openrouter_client()
         tools = convert_tools_for_openai()
@@ -1716,9 +1777,24 @@ async def ai_chat(request: AIChatRequest):
         model_key = request.model if request.model in AVAILABLE_MODELS else DEFAULT_MODEL
         model_id = AVAILABLE_MODELS[model_key]["id"]
 
+        # 取得用戶最後一條訊息，用於 RAG 搜尋
+        last_user_message = ""
+        for m in reversed(request.messages):
+            if m.role == "user":
+                last_user_message = m.content
+                break
+
+        # 搜尋 Brain 知識庫（RAG）
+        rag_context = ""
+        if last_user_message:
+            rag_context = await search_brain_knowledge(last_user_message, top_k=3)
+
+        # 組合 system prompt（包含 RAG 知識 + CRM 使用指南）
+        enhanced_prompt = CRM_SYSTEM_PROMPT + CRM_USAGE_GUIDE + rag_context
+
         # 轉換訊息格式
         messages = [
-            {"role": "system", "content": CRM_SYSTEM_PROMPT}
+            {"role": "system", "content": enhanced_prompt}
         ]
         for m in request.messages:
             messages.append({"role": m.role, "content": m.content})
@@ -1830,7 +1906,22 @@ async def ai_chat(request: AIChatRequest):
 
 @app.post("/ai/chat/stream")
 async def ai_chat_stream(request: AIChatRequest):
-    """AI 聊天串流端點 - 使用 Server-Sent Events"""
+    """AI 聊天串流端點 - 使用 Server-Sent Events + RAG"""
+
+    # 取得用戶最後一條訊息，用於 RAG 搜尋（在 generate 外面執行）
+    last_user_message = ""
+    for m in reversed(request.messages):
+        if m.role == "user":
+            last_user_message = m.content
+            break
+
+    # 搜尋 Brain 知識庫（RAG）
+    rag_context = ""
+    if last_user_message:
+        rag_context = await search_brain_knowledge(last_user_message, top_k=3)
+
+    # 組合 system prompt
+    enhanced_prompt = CRM_SYSTEM_PROMPT + CRM_USAGE_GUIDE + rag_context
 
     async def generate():
         try:
@@ -1840,7 +1931,7 @@ async def ai_chat_stream(request: AIChatRequest):
             model_key = request.model if request.model in AVAILABLE_MODELS else DEFAULT_MODEL
             model_id = AVAILABLE_MODELS[model_key]["id"]
 
-            messages = [{"role": "system", "content": CRM_SYSTEM_PROMPT}]
+            messages = [{"role": "system", "content": enhanced_prompt}]
             for m in request.messages:
                 messages.append({"role": m.role, "content": m.content})
 
