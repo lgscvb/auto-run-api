@@ -507,7 +507,7 @@ async def create_quote(
         "branch_id": branch_id,
         "contract_type": contract_type,
         "contract_months": contract_months,
-        "items": json.dumps(items),
+        "items": items,  # PostgREST JSONB 欄位直接傳 list，httpx 會自動序列化
         "subtotal": subtotal,
         "discount_amount": discount_amount or 0,
         "total_amount": total_amount,
