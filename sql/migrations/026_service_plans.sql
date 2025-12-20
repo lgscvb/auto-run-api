@@ -94,7 +94,14 @@ CREATE TRIGGER trigger_update_service_plans_updated_at
     EXECUTE FUNCTION update_service_plans_updated_at();
 
 -- ============================================================================
--- 5. 驗證
+-- 5. 授權 anon 角色存取（PostgREST）
+-- ============================================================================
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON service_plans TO anon;
+GRANT USAGE, SELECT ON SEQUENCE service_plans_id_seq TO anon;
+
+-- ============================================================================
+-- 6. 驗證
 -- ============================================================================
 
 SELECT category, name, code, unit_price, unit, deposit
