@@ -243,6 +243,11 @@ from tools.brain_tools import (
     brain_list_categories
 )
 
+from tools.calendar_tools import (
+    calendar_create_signing_appointment,
+    calendar_list_signing_appointments
+)
+
 
 # ============================================================================
 # MCP Tool 定義
@@ -919,6 +924,30 @@ MCP_TOOLS = {
         "description": "列出 Brain 知識庫的所有分類及說明",
         "parameters": {},
         "handler": brain_list_categories
+    },
+
+    # Calendar 工具
+    "calendar_create_signing_appointment": {
+        "description": "建立簽約行程到 Google Calendar。當客戶確認簽約時間時使用。",
+        "parameters": {
+            "customer_name": {"type": "string", "description": "客戶姓名", "required": True},
+            "appointment_datetime": {"type": "string", "description": "簽約日期時間 (YYYY-MM-DD HH:MM)", "required": True},
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "duration_minutes": {"type": "integer", "description": "預計時長（分鐘）", "default": 60},
+            "plan_name": {"type": "string", "description": "簽約方案", "optional": True},
+            "customer_phone": {"type": "string", "description": "客戶電話", "optional": True},
+            "customer_email": {"type": "string", "description": "客戶 Email", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True},
+            "branch": {"type": "string", "description": "場館名稱", "default": "大忠館"}
+        },
+        "handler": calendar_create_signing_appointment
+    },
+    "calendar_list_signing_appointments": {
+        "description": "列出即將到來的簽約行程",
+        "parameters": {
+            "days_ahead": {"type": "integer", "description": "查詢未來幾天的行程", "default": 7}
+        },
+        "handler": calendar_list_signing_appointments
     }
 }
 
