@@ -60,6 +60,9 @@ services:
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
       BRAIN_API_URL: ${BRAIN_API_URL:-https://brain.yourspce.org}
+      GOOGLE_CALENDAR_CREDENTIALS: /secrets/calendar-sa.json
+    volumes:
+      - ./secrets:/secrets:ro
     ports:
       - "8080:8080"
     networks:
