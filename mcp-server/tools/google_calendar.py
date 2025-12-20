@@ -93,6 +93,53 @@ class GoogleCalendarService:
                 'error': str(e)
             }
 
+    def share_calendar(
+        self,
+        calendar_id: str,
+        email: str,
+        role: str = "reader"
+    ) -> Dict[str, Any]:
+        """
+        分享行事曆給指定使用者
+
+        Args:
+            calendar_id: Calendar ID
+            email: 要分享的 Email
+            role: 權限角色 (reader, writer, owner)
+
+        Returns:
+            分享結果
+        """
+        service = self._get_service()
+
+        rule = {
+            'scope': {
+                'type': 'user',
+                'value': email
+            },
+            'role': role
+        }
+
+        try:
+            created_rule = service.acl().insert(
+                calendarId=calendar_id,
+                body=rule
+            ).execute()
+
+            logger.info(f"Shared calendar {calendar_id} with {email} as {role}")
+            return {
+                'success': True,
+                'email': email,
+                'role': role,
+                'rule_id': created_rule.get('id')
+            }
+        except HttpError as e:
+            logger.error(f"Failed to share calendar: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
     def create_event(
         self,
         calendar_id: str,

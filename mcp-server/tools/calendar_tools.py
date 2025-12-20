@@ -268,6 +268,75 @@ async def calendar_create(name: str, description: str = None) -> dict:
         }
 
 
+calendar_share_schema = {
+    "name": "calendar_share",
+    "description": "分享行事曆給指定的 Email 使用者",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "calendar_id": {
+                "type": "string",
+                "description": "行事曆 ID（若不提供則使用簽約行事曆）"
+            },
+            "emails": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "要分享的 Email 列表"
+            },
+            "role": {
+                "type": "string",
+                "description": "權限角色：reader（檢視）、writer（編輯）",
+                "enum": ["reader", "writer"],
+                "default": "writer"
+            }
+        },
+        "required": ["emails"]
+    }
+}
+
+
+async def calendar_share(
+    emails: list,
+    calendar_id: str = None,
+    role: str = "writer"
+) -> dict:
+    """分享行事曆給指定使用者"""
+    try:
+        calendar_service = get_calendar_service()
+        target_calendar_id = calendar_id or SIGNING_CALENDAR_ID
+
+        results = []
+        for email in emails:
+            result = calendar_service.share_calendar(
+                calendar_id=target_calendar_id,
+                email=email,
+                role=role
+            )
+            results.append({
+                "email": email,
+                "success": result.get("success"),
+                "error": result.get("error")
+            })
+
+        success_count = sum(1 for r in results if r["success"])
+        failed = [r for r in results if not r["success"]]
+
+        return {
+            "success": success_count > 0,
+            "message": f"已分享給 {success_count}/{len(emails)} 位使用者",
+            "role": role,
+            "results": results,
+            "failed": failed if failed else None
+        }
+
+    except Exception as e:
+        logger.error(f"calendar_share error: {e}")
+        return {
+            "success": False,
+            "message": f"分享行事曆失敗：{str(e)}"
+        }
+
+
 calendar_list_signing_appointments_schema = {
     "name": "calendar_list_signing_appointments",
     "description": "列出即將到來的簽約行程",
@@ -332,6 +401,10 @@ CALENDAR_TOOLS = [
     {
         "schema": calendar_create_schema,
         "handler": calendar_create
+    },
+    {
+        "schema": calendar_share_schema,
+        "handler": calendar_share
     },
     {
         "schema": calendar_create_signing_appointment_schema,

@@ -245,6 +245,7 @@ from tools.brain_tools import (
 
 from tools.calendar_tools import (
     calendar_create,
+    calendar_share,
     calendar_create_signing_appointment,
     calendar_list_signing_appointments
 )
@@ -935,6 +936,15 @@ MCP_TOOLS = {
             "description": {"type": "string", "description": "行事曆描述", "optional": True}
         },
         "handler": calendar_create
+    },
+    "calendar_share": {
+        "description": "分享行事曆給指定的 Email 使用者",
+        "parameters": {
+            "emails": {"type": "array", "description": "要分享的 Email 列表", "required": True},
+            "calendar_id": {"type": "string", "description": "行事曆 ID（預設使用簽約行事曆）", "optional": True},
+            "role": {"type": "string", "description": "權限角色 (reader/writer)", "default": "writer"}
+        },
+        "handler": calendar_share
     },
     "calendar_create_signing_appointment": {
         "description": "建立簽約行程到 Google Calendar。當客戶確認簽約時間時使用。",
