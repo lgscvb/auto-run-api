@@ -33,6 +33,10 @@ calendar_create_signing_appointment_schema = {
 - 客戶說「我下週一下午3點可以」
 - 確認了簽約時間後
 
+進階功能：
+- 若提供 quote_id 參數，會自動將該報價單狀態更新為「已接受」
+- 這代表客戶願意來現場簽約 = 接受報價
+
 不適用：
 - 客戶還在詢問時間
 - 尚未確定日期時間""",
@@ -77,6 +81,10 @@ calendar_create_signing_appointment_schema = {
                 "description": "場館名稱",
                 "enum": ["大忠館", "台中館"],
                 "default": "大忠館"
+            },
+            "quote_id": {
+                "type": "integer",
+                "description": "報價單ID（選填）。若提供，會自動將報價單狀態更新為「已接受」"
             }
         },
         "required": ["customer_name", "appointment_datetime"]
@@ -93,7 +101,8 @@ async def calendar_create_signing_appointment(
     customer_phone: str = None,
     customer_email: str = None,
     notes: str = None,
-    branch: str = "大忠館"
+    branch: str = "大忠館",
+    quote_id: int = None
 ) -> dict:
     """
     建立簽約行程到 Google Calendar
@@ -108,6 +117,7 @@ async def calendar_create_signing_appointment(
         customer_email: 客戶 Email
         notes: 備註
         branch: 場館
+        quote_id: 報價單ID（若提供，會自動將報價單狀態更新為已接受）
 
     Returns:
         建立結果
@@ -185,7 +195,7 @@ async def calendar_create_signing_appointment(
         )
 
         if result.get("success"):
-            return {
+            response = {
                 "success": True,
                 "message": f"已建立簽約行程：{start_dt.strftime('%Y/%m/%d %H:%M')} @ {branch}",
                 "event_id": result.get("event_id"),
@@ -198,6 +208,29 @@ async def calendar_create_signing_appointment(
                     "plan_name": plan_name
                 }
             }
+
+            # 如果有提供 quote_id，自動更新報價單狀態為已接受
+            if quote_id:
+                try:
+                    from tools.quote_tools import update_quote_status
+                    quote_result = await update_quote_status(
+                        quote_id=quote_id,
+                        status="accepted",
+                        notes=f"客戶已約簽約時間：{start_dt.strftime('%Y/%m/%d %H:%M')}"
+                    )
+                    if quote_result.get("success"):
+                        response["quote_updated"] = True
+                        response["quote_id"] = quote_id
+                        response["message"] += f"，報價單已更新為「已接受」"
+                    else:
+                        response["quote_updated"] = False
+                        response["quote_error"] = quote_result.get("message")
+                except Exception as e:
+                    logger.warning(f"Failed to update quote status: {e}")
+                    response["quote_updated"] = False
+                    response["quote_error"] = str(e)
+
+            return response
         else:
             logger.error(f"Failed to create calendar event: {result.get('error')}")
             return {
