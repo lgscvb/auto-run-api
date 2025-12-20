@@ -98,14 +98,13 @@ async def generate_contract_number(branch_id: int) -> str:
     if branch_id == 1:
         # 大忠館：DZ-XXX 格式
         prefix = "DZ-"
-        # 查詢現有最大編號
+        # 查詢現有最大編號（取全部，因為字串排序無法正確取得最大數字編號）
         contracts = await postgrest_get(
             "contracts",
             {
                 "select": "contract_number",
                 "contract_number": "like.DZ-%",
-                "order": "contract_number.desc",
-                "limit": "100"
+                "limit": "2000"  # 取全部後在程式碼中找最大值
             }
         )
 
