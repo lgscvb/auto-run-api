@@ -166,7 +166,8 @@ from tools.quote_tools import (
     update_quote_status,
     delete_quote,
     convert_quote_to_contract,
-    quote_generate_pdf
+    quote_generate_pdf,
+    send_quote_to_line
 )
 
 from tools.invoice_tools import (
@@ -562,6 +563,14 @@ MCP_TOOLS = {
             "quote_id": {"type": "integer", "description": "報價單ID", "required": True}
         },
         "handler": quote_generate_pdf
+    },
+    "quote_send_to_line": {
+        "description": "發送報價單給 LINE 用戶（透過 LINE Messaging API 發送報價單摘要和 PDF 下載連結）",
+        "parameters": {
+            "quote_id": {"type": "integer", "description": "報價單ID", "required": True},
+            "line_user_id": {"type": "string", "description": "LINE User ID", "required": True}
+        },
+        "handler": send_quote_to_line
     },
 
     # 發票工具

@@ -854,3 +854,201 @@ async def quote_generate_pdf(quote_id: int) -> Dict[str, Any]:
             "success": False,
             "message": f"PDF 生成失敗: {e}"
         }
+
+
+async def send_quote_to_line(
+    quote_id: int,
+    line_user_id: str
+) -> Dict[str, Any]:
+    """
+    發送報價單給 LINE 用戶
+
+    透過 LINE Messaging API 發送報價單摘要和 PDF 下載連結給潛在客戶
+
+    Args:
+        quote_id: 報價單ID
+        line_user_id: LINE User ID
+
+    Returns:
+        發送結果
+    """
+    from tools.line_tools import send_line_push
+
+    try:
+        # 1. 取得報價單資料
+        quotes = await postgrest_get("v_quotes", {"id": f"eq.{quote_id}"})
+        if not quotes:
+            return {"success": False, "message": "找不到報價單"}
+
+        quote = quotes[0]
+
+        # 2. 生成 PDF URL
+        pdf_result = await quote_generate_pdf(quote_id)
+        pdf_url = pdf_result.get("pdf_url") if pdf_result.get("success") else None
+
+        # 3. 取得報價單資訊
+        quote_number = quote.get("quote_number", f"Q-{quote_id}")
+        plan_name = quote.get("plan_name", "報價方案")
+        total_amount = quote.get("total_amount", 0)
+        deposit_amount = quote.get("deposit_amount", 0)
+        valid_until = quote.get("valid_until", "")
+        branch_name = quote.get("branch_name", "Hour Jungle")
+        customer_name = quote.get("customer_name", "貴賓")
+
+        # 4. 準備 LINE 訊息
+        # 使用 Flex Message 呈現報價單摘要
+        flex_message = {
+            "type": "flex",
+            "altText": f"Hour Jungle 報價單 {quote_number}",
+            "contents": {
+                "type": "bubble",
+                "size": "mega",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#2d5a27",
+                    "paddingAll": "15px",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "HOUR JUNGLE",
+                            "color": "#ffffff",
+                            "size": "xs",
+                            "weight": "bold"
+                        },
+                        {
+                            "type": "text",
+                            "text": f"{branch_name}報價單",
+                            "color": "#ffffff",
+                            "size": "lg",
+                            "weight": "bold",
+                            "margin": "sm"
+                        }
+                    ]
+                },
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "paddingAll": "15px",
+                    "spacing": "md",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": "報價單號", "size": "sm", "color": "#888888", "flex": 1},
+                                {"type": "text", "text": quote_number, "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
+                            ]
+                        },
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": "方案", "size": "sm", "color": "#888888", "flex": 1},
+                                {"type": "text", "text": plan_name, "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
+                            ]
+                        },
+                        {"type": "separator", "margin": "lg"},
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "margin": "lg",
+                            "contents": [
+                                {"type": "text", "text": "總金額", "size": "md", "color": "#333333", "weight": "bold", "flex": 1},
+                                {"type": "text", "text": f"${total_amount:,.0f}", "size": "lg", "color": "#2d5a27", "weight": "bold", "flex": 2, "align": "end"}
+                            ]
+                        },
+                        {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": "押金", "size": "sm", "color": "#888888", "flex": 1},
+                                {"type": "text", "text": f"${deposit_amount:,.0f}", "size": "sm", "color": "#333333", "flex": 2, "align": "end"}
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "text": f"報價有效期限：{valid_until}",
+                            "size": "xs",
+                            "color": "#999999",
+                            "margin": "lg",
+                            "align": "center"
+                        }
+                    ]
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "paddingAll": "15px",
+                    "spacing": "sm",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "color": "#2d5a27",
+                            "action": {
+                                "type": "uri",
+                                "label": "查看完整報價單 PDF",
+                                "uri": pdf_url or "https://hourjungle.com"
+                            }
+                        } if pdf_url else {
+                            "type": "text",
+                            "text": "如需完整報價單，請聯繫我們",
+                            "size": "xs",
+                            "color": "#999999",
+                            "align": "center"
+                        },
+                        {
+                            "type": "text",
+                            "text": "如有任何問題，歡迎隨時詢問！",
+                            "size": "xs",
+                            "color": "#888888",
+                            "align": "center",
+                            "margin": "md"
+                        }
+                    ]
+                }
+            }
+        }
+
+        # 5. 發送 LINE 訊息
+        messages = [flex_message]
+        result = await send_line_push(
+            line_user_id=line_user_id,
+            messages=messages,
+            sender_name=customer_name,
+            log_to_brain_enabled=True
+        )
+
+        if result.get("success"):
+            # 6. 更新報價單狀態為已發送
+            await postgrest_patch(
+                "quotes",
+                {"id": f"eq.{quote_id}"},
+                {
+                    "status": "sent",
+                    "sent_at": datetime.now().isoformat(),
+                    "line_user_id": line_user_id  # 記錄發送對象
+                }
+            )
+
+            return {
+                "success": True,
+                "message": f"報價單 {quote_number} 已發送給 {customer_name}",
+                "quote_id": quote_id,
+                "quote_number": quote_number,
+                "line_user_id": line_user_id,
+                "pdf_url": pdf_url
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"LINE 發送失敗: {result.get('error', '未知錯誤')}"
+            }
+
+    except Exception as e:
+        logger.error(f"send_quote_to_line error: {e}")
+        return {
+            "success": False,
+            "message": f"發送報價單失敗: {e}"
+        }
