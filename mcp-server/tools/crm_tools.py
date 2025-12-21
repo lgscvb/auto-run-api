@@ -842,19 +842,31 @@ async def create_contract(
 
             # 第一期租金記錄
             if monthly_rent and monthly_rent > 0:
+                # 根據繳費週期計算當期金額
+                cycle_multiplier = {
+                    'monthly': 1,
+                    'quarterly': 3,
+                    'semi_annual': 6,
+                    'annual': 12,
+                    'biennial': 24,
+                    'triennial': 36
+                }
+                multiplier = cycle_multiplier.get(payment_cycle, 1)
+                period_amount = monthly_rent * multiplier
+
                 first_rent_payment = {
                     "contract_id": contract["id"],
                     "customer_id": contract.get("customer_id"),
                     "branch_id": branch_id,
                     "payment_type": "rent",
                     "payment_period": first_payment_period,
-                    "amount": monthly_rent,
+                    "amount": period_amount,
                     "due_date": first_due_date,
                     "payment_status": "pending"
                 }
                 await postgrest_post("payments", first_rent_payment)
-                payments_created.append("第一期租金")
-                logger.info(f"Created first rent payment for contract {contract['id']}")
+                payments_created.append(f"第一期租金 ${period_amount:,.0f}")
+                logger.info(f"Created first rent payment for contract {contract['id']}, amount: {period_amount} ({payment_cycle})")
 
         except Exception as pay_err:
             logger.warning(f"繳費記錄建立失敗（不影響合約建立）: {pay_err}")
