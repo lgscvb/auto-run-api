@@ -691,10 +691,11 @@ async def delete_quote(quote_id: int) -> Dict[str, Any]:
             return {"success": False, "message": "找不到報價單"}
 
         quote = quotes[0]
-        if quote.get("status") != "draft":
+        # 只禁止刪除已轉換為合約的報價單
+        if quote.get("status") == "converted":
             return {
                 "success": False,
-                "message": f"只能刪除草稿狀態的報價單，目前狀態為 {quote.get('status')}"
+                "message": "無法刪除已轉換為合約的報價單"
             }
 
         await postgrest_delete("quotes", {"id": f"eq.{quote_id}"})
