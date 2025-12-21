@@ -250,6 +250,16 @@ from tools.calendar_tools import (
     calendar_list_signing_appointments
 )
 
+from tools.service_plan_tools import (
+    list_service_plans,
+    get_service_plan,
+    create_service_plan,
+    update_service_plan,
+    delete_service_plan,
+    reorder_service_plans,
+    sync_prices_to_brain
+)
+
 
 # ============================================================================
 # MCP Tool 定義
@@ -967,6 +977,68 @@ MCP_TOOLS = {
             "days_ahead": {"type": "integer", "description": "查詢未來幾天的行程", "default": 7}
         },
         "handler": calendar_list_signing_appointments
+    },
+
+    # 服務方案價格管理
+    "service_plan_list": {
+        "description": "列出服務方案價格表",
+        "parameters": {
+            "category": {"type": "string", "description": "分類篩選（登記服務/空間服務/代辦服務）", "optional": True},
+            "is_active": {"type": "boolean", "description": "是否只顯示啟用的方案", "optional": True}
+        },
+        "handler": list_service_plans
+    },
+    "service_plan_get": {
+        "description": "取得單一服務方案詳情",
+        "parameters": {
+            "plan_id": {"type": "integer", "description": "方案ID", "required": True}
+        },
+        "handler": get_service_plan
+    },
+    "service_plan_create": {
+        "description": "建立服務方案",
+        "parameters": {
+            "category": {"type": "string", "description": "分類", "required": True},
+            "name": {"type": "string", "description": "服務名稱", "required": True},
+            "code": {"type": "string", "description": "服務代碼（唯一）", "required": True},
+            "unit_price": {"type": "number", "description": "單價", "required": True},
+            "unit": {"type": "string", "description": "計價單位（月/小時/次）", "required": True},
+            "billing_cycle": {"type": "string", "description": "繳費週期", "optional": True},
+            "deposit": {"type": "number", "description": "押金", "optional": True},
+            "original_price": {"type": "number", "description": "原價", "optional": True},
+            "min_duration": {"type": "string", "description": "最低租期", "optional": True},
+            "revenue_type": {"type": "string", "description": "營收類型（own/referral）", "optional": True},
+            "notes": {"type": "string", "description": "備註", "optional": True},
+            "sort_order": {"type": "integer", "description": "排序", "optional": True}
+        },
+        "handler": create_service_plan
+    },
+    "service_plan_update": {
+        "description": "更新服務方案",
+        "parameters": {
+            "plan_id": {"type": "integer", "description": "方案ID", "required": True},
+            "updates": {"type": "object", "description": "要更新的欄位", "required": True}
+        },
+        "handler": update_service_plan
+    },
+    "service_plan_delete": {
+        "description": "刪除服務方案",
+        "parameters": {
+            "plan_id": {"type": "integer", "description": "方案ID", "required": True}
+        },
+        "handler": delete_service_plan
+    },
+    "service_plan_reorder": {
+        "description": "批量更新服務方案排序",
+        "parameters": {
+            "orders": {"type": "array", "description": "[{id, sort_order}, ...]", "required": True}
+        },
+        "handler": reorder_service_plans
+    },
+    "sync_prices_to_brain": {
+        "description": "同步價格資訊到 AI 知識庫",
+        "parameters": {},
+        "handler": sync_prices_to_brain
     }
 }
 
