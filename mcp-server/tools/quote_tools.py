@@ -799,26 +799,36 @@ async def convert_quote_to_contract(
             if isinstance(items_raw, str):
                 items_raw = json.loads(items_raw)
 
-            # 只計算 own 項目（非 referral）且為月租的項目
-            monthly_own_items = [
+            # 所有 own 項目（非 referral）
+            own_items = [
                 item for item in items_raw
                 if item.get("revenue_type") != "referral"
-                and item.get("billing_cycle") not in [None, "one_time"]
+            ]
+
+            # 方式 1: 找有 billing_cycle 設定且為月租的項目
+            monthly_own_items = [
+                item for item in own_items
+                if item.get("billing_cycle") not in [None, "one_time"]
             ]
 
             if monthly_own_items:
                 # 月租金 = 所有月租項目的 unit_price 總和
                 monthly_rent = sum(float(item.get("unit_price", 0)) for item in monthly_own_items)
-            else:
-                # 如果沒有明確的月租項目，fallback 到舊邏輯但只計算 own 項目
-                own_items = [
-                    item for item in items_raw
-                    if item.get("revenue_type") != "referral"
-                ]
-                own_total = sum(float(item.get("amount", 0)) for item in own_items)
-                monthly_rent = round(own_total / contract_months) if contract_months > 0 else own_total
+                logger.info(f"Calculated monthly_rent from billing_cycle items: {monthly_rent}")
+            elif own_items:
+                # 方式 2: 如果沒有 billing_cycle 設定，使用 own 項目的 unit_price 總和
+                # （假設所有 own 項目都是月租項目）
+                monthly_rent = sum(float(item.get("unit_price", 0)) for item in own_items)
+                logger.info(f"Calculated monthly_rent from all own items unit_price: {monthly_rent}")
 
-            logger.info(f"Calculated monthly_rent from items: {monthly_rent}")
+                # 如果 unit_price 總和為 0，fallback 到 amount / months
+                if monthly_rent == 0:
+                    own_total = sum(float(item.get("amount", 0)) for item in own_items)
+                    monthly_rent = round(own_total / contract_months) if contract_months > 0 else own_total
+                    logger.info(f"Fallback: monthly_rent from amount/months: {monthly_rent}")
+            else:
+                monthly_rent = 0
+                logger.info("No own items found, monthly_rent = 0")
 
         if deposit_amount is None:
             deposit_amount = quote.get("deposit_amount", 0)
