@@ -38,9 +38,22 @@ def get_db_connection():
 
 async def postgrest_get(endpoint: str, params: dict = None) -> Any:
     """PostgREST GET 請求"""
+    from urllib.parse import urlencode, quote
+
     url = f"{POSTGREST_URL}/{endpoint}"
+
+    # 手動編碼參數，保留 PostgREST 特殊字符 (*, ., 括號等)
+    if params:
+        # 自訂編碼：只編碼中文等特殊字符，保留 PostgREST 語法字符
+        def encode_value(v):
+            # 保留 PostgREST 運算符和語法字符
+            return quote(str(v), safe='*.,()=')
+
+        query_parts = [f"{k}={encode_value(v)}" for k, v in params.items()]
+        url = f"{url}?{'&'.join(query_parts)}"
+
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, params=params, timeout=30.0)
+        response = await client.get(url, timeout=30.0)
         response.raise_for_status()
         return response.json()
 
