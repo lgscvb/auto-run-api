@@ -91,7 +91,7 @@ async def search_customers(
         limit: 回傳筆數
 
     Returns:
-        客戶列表
+        客戶列表（含活動合約詳情）
     """
     params = {"limit": limit}
 
@@ -105,6 +105,32 @@ async def search_customers(
 
     try:
         customers = await postgrest_get("v_customer_summary", params)
+
+        # 為每個客戶查詢活動合約詳情
+        customer_ids = [c["id"] for c in customers if c.get("active_contracts", 0) > 0]
+        if customer_ids:
+            contracts_params = {
+                "customer_id": f"in.({','.join(map(str, customer_ids))})",
+                "status": "eq.active",
+                "select": "id,customer_id,contract_number,contract_type,branch_id,monthly_rent,position_number"
+            }
+            contracts = await postgrest_get("contracts", contracts_params)
+
+            # 按 customer_id 分組
+            contracts_by_customer = {}
+            for c in contracts:
+                cid = c["customer_id"]
+                if cid not in contracts_by_customer:
+                    contracts_by_customer[cid] = []
+                contracts_by_customer[cid].append(c)
+
+            # 附加到客戶資料
+            for customer in customers:
+                customer["active_contracts"] = contracts_by_customer.get(customer["id"], [])
+        else:
+            for customer in customers:
+                customer["active_contracts"] = []
+
         return {
             "count": len(customers),
             "customers": customers
@@ -672,10 +698,40 @@ async def create_contract(
         result = await postgrest_post("contracts", data)
         contract = result[0] if isinstance(result, list) else result
 
+        # 方案 B：營業登記合約建立後自動分配空位
+        position_assigned = None
+        if contract_type == "virtual_office" and not contract.get("position_number"):
+            try:
+                # 查詢該場館的空位（沒有被活動合約佔用的位置）
+                vacant_positions = await postgrest_get("v_floor_positions", {
+                    "branch_id": f"eq.{branch_id}",
+                    "contract_id": "is.null",
+                    "order": "position_number.asc",
+                    "limit": 1
+                })
+
+                if vacant_positions and len(vacant_positions) > 0:
+                    position_number = vacant_positions[0]["position_number"]
+                    # 更新合約的位置編號
+                    await postgrest_patch(
+                        f"contracts?id=eq.{contract['id']}",
+                        {"position_number": position_number}
+                    )
+                    contract["position_number"] = position_number
+                    position_assigned = position_number
+                    logger.info(f"合約 {contract['id']} 自動分配位置 {position_number}")
+            except Exception as pos_err:
+                logger.warning(f"自動分配位置失敗（不影響合約建立）: {pos_err}")
+
+        message = f"合約 {contract.get('contract_number', contract['id'])} 建立成功"
+        if position_assigned:
+            message += f"，已自動分配位置 {position_assigned}"
+
         return {
             "success": True,
-            "message": f"合約 {contract.get('contract_number', contract['id'])} 建立成功",
-            "contract": contract
+            "message": message,
+            "contract": contract,
+            "position_assigned": position_assigned
         }
     except Exception as e:
         logger.error(f"create_contract error: {e}")

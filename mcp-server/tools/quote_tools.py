@@ -875,6 +875,33 @@ async def convert_quote_to_contract(
         contract_result = await postgrest_post("contracts", contract_data)
         contract = contract_result[0] if isinstance(contract_result, list) else contract_result
 
+        # 6.5 方案 B：營業登記合約建立後自動分配空位
+        position_assigned = None
+        contract_type = quote.get("contract_type", "virtual_office")
+        if contract_type == "virtual_office" and not contract.get("position_number"):
+            try:
+                # 查詢該場館的空位（沒有被活動合約佔用的位置）
+                vacant_positions = await postgrest_get("v_floor_positions", {
+                    "branch_id": f"eq.{branch_id}",
+                    "contract_id": "is.null",
+                    "order": "position_number.asc",
+                    "limit": 1
+                })
+
+                if vacant_positions and len(vacant_positions) > 0:
+                    position_number = vacant_positions[0]["position_number"]
+                    # 更新合約的位置編號
+                    await postgrest_patch(
+                        "contracts",
+                        {"id": f"eq.{contract['id']}"},
+                        {"position_number": position_number}
+                    )
+                    contract["position_number"] = position_number
+                    position_assigned = position_number
+                    logger.info(f"合約 {contract['id']} 自動分配位置 {position_number}")
+            except Exception as pos_err:
+                logger.warning(f"自動分配位置失敗（不影響合約建立）: {pos_err}")
+
         # 7. 創建繳費記錄
         # 合約建立後自動產生繳費記錄，方便財務追蹤
         payments_created = []
@@ -932,10 +959,11 @@ async def convert_quote_to_contract(
 
         # 組合回傳訊息
         payments_msg = f"，已建立繳費記錄：{', '.join(payments_created)}" if payments_created else ""
+        position_msg = f"，已自動分配位置 {position_assigned}" if position_assigned else ""
 
         return {
             "success": True,
-            "message": f"報價單已成功轉換為合約{payments_msg}",
+            "message": f"報價單已成功轉換為合約{payments_msg}{position_msg}",
             "contract": {
                 "id": contract["id"],
                 "contract_number": contract.get("contract_number"),
@@ -946,10 +974,12 @@ async def convert_quote_to_contract(
                 "end_date": contract_end,
                 "monthly_rent": monthly_rent,
                 "deposit": deposit_amount,
-                "status": "pending_sign"
+                "status": "pending_sign",
+                "position_number": position_assigned
             },
             "quote_number": quote.get("quote_number"),
-            "payments_created": payments_created
+            "payments_created": payments_created,
+            "position_assigned": position_assigned
         }
 
     except Exception as e:
