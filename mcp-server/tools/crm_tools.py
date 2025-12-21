@@ -106,8 +106,6 @@ async def search_customers(
     Returns:
         客戶列表（含活動合約詳情）
     """
-    logger.info(f"search_customers called with query={query}, branch_id={branch_id}, status={status}")
-
     params = {"limit": limit}
 
     if branch_id:
@@ -117,8 +115,6 @@ async def search_customers(
     if query:
         # 模糊搜尋姓名、電話、公司名
         params["or"] = f"(name.ilike.*{query}*,phone.ilike.*{query}*,company_name.ilike.*{query}*)"
-
-    logger.info(f"search_customers params={params}")
 
     try:
         customers = await postgrest_get("v_customer_summary", params)
