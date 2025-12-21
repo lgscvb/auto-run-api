@@ -739,25 +739,29 @@ MCP_TOOLS = {
         "handler": legal_list_candidates
     },
     "legal_generate_content": {
-        "description": "使用 AI 生成存證信函內容",
+        "description": "使用 AI 生成存證信函內容（支援從逾期付款或合約建立）",
         "parameters": {
-            "payment_id": {"type": "integer", "description": "付款ID", "required": True},
-            "customer_name": {"type": "string", "description": "客戶姓名", "required": True},
+            "payment_id": {"type": "integer", "description": "付款ID（模式1：逾期付款）", "optional": True},
+            "contract_id": {"type": "integer", "description": "合約ID（模式2：手動建立）", "optional": True},
+            "customer_name": {"type": "string", "description": "客戶姓名", "optional": True},
             "company_name": {"type": "string", "description": "公司名稱", "optional": True},
             "address": {"type": "string", "description": "地址", "optional": True},
-            "overdue_amount": {"type": "number", "description": "逾期金額", "required": True},
-            "overdue_days": {"type": "integer", "description": "逾期天數", "required": True},
+            "overdue_amount": {"type": "number", "description": "逾期金額", "default": 0},
+            "overdue_days": {"type": "integer", "description": "逾期天數", "default": 0},
             "contract_number": {"type": "string", "description": "合約編號", "optional": True},
             "reminder_count": {"type": "integer", "description": "催繳次數", "default": 0},
-            "branch_name": {"type": "string", "description": "場館名稱", "optional": True}
+            "branch_name": {"type": "string", "description": "場館名稱", "optional": True},
+            "service_items": {"type": "string", "description": "服務項目（手動建立時使用）", "optional": True},
+            "monthly_rent": {"type": "number", "description": "月租金（手動建立時使用）", "default": 0}
         },
         "handler": legal_generate_content
     },
     "legal_create_letter": {
-        "description": "建立存證信函記錄（草稿）",
+        "description": "建立存證信函記錄（支援從逾期付款或合約建立）",
         "parameters": {
-            "payment_id": {"type": "integer", "description": "付款ID", "required": True},
             "content": {"type": "string", "description": "存證信函內容", "required": True},
+            "payment_id": {"type": "integer", "description": "付款ID（模式1）", "optional": True},
+            "contract_id": {"type": "integer", "description": "合約ID（模式2）", "optional": True},
             "recipient_name": {"type": "string", "description": "收件人姓名", "optional": True},
             "recipient_address": {"type": "string", "description": "收件人地址", "optional": True}
         },

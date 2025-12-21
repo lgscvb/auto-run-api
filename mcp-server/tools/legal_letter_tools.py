@@ -204,29 +204,39 @@ async def legal_list_candidates(
 
 
 async def legal_generate_content(
-    payment_id: int,
-    customer_name: str,
+    payment_id: int = None,
+    contract_id: int = None,
+    customer_name: str = None,
     company_name: str = None,
     address: str = None,
     overdue_amount: float = 0,
     overdue_days: int = 0,
     contract_number: str = None,
     reminder_count: int = 0,
-    branch_name: str = None
+    branch_name: str = None,
+    service_items: str = None,
+    monthly_rent: float = 0
 ) -> Dict[str, Any]:
     """
     使用 LLM 生成存證信函內容
 
+    支援兩種模式：
+    1. 從逾期付款生成（提供 payment_id）
+    2. 從合約手動生成（提供 contract_id）
+
     Args:
-        payment_id: 付款ID
+        payment_id: 付款ID（模式1）
+        contract_id: 合約ID（模式2，手動建立時使用）
         customer_name: 客戶姓名
         company_name: 公司名稱（可選）
         address: 地址
-        overdue_amount: 逾期金額
-        overdue_days: 逾期天數
+        overdue_amount: 逾期金額（模式1）
+        overdue_days: 逾期天數（模式1）
         contract_number: 合約編號
-        reminder_count: 催繳次數
+        reminder_count: 催繳次數（模式1）
         branch_name: 場館名稱
+        service_items: 服務項目（模式2）
+        monthly_rent: 月租金（模式2）
 
     Returns:
         生成的存證信函內容
@@ -240,7 +250,10 @@ async def legal_generate_content(
     # 組合收件人名稱
     recipient = company_name if company_name else customer_name
 
-    prompt = f"""你是一位專業的台灣法律文書撰寫專家。請根據以下資訊撰寫一封正式的存證信函：
+    # 根據模式生成不同的 prompt
+    if payment_id and overdue_amount > 0:
+        # 模式 1：逾期付款催繳
+        prompt = f"""你是一位專業的台灣法律文書撰寫專家。請根據以下資訊撰寫一封正式的存證信函：
 
 收件人資訊：
 - 姓名/公司：{recipient}
@@ -263,6 +276,31 @@ async def legal_generate_content(
 6. 正式結尾
 
 請使用正式法律文書用語，但保持清晰易懂。不需要加入日期和郵局格式資訊，只需要信函主體內容。"""
+    else:
+        # 模式 2：手動從合約建立（非逾期情況，可能是違約或其他原因）
+        prompt = f"""你是一位專業的台灣法律文書撰寫專家。請根據以下資訊撰寫一封正式的存證信函：
+
+收件人資訊：
+- 姓名/公司：{recipient}
+- 地址：{address or '（待補）'}
+
+合約資訊：
+- 合約編號：{contract_number or '（未提供）'}
+- 服務項目：{service_items or '營業登記服務'}
+- 月租金：新台幣 {monthly_rent:,.0f} 元整
+
+寄件人：你的空間有限公司（Hour Jungle {branch_name or ''}）
+
+請撰寫存證信函，包含：
+1. 正式開頭稱謂
+2. 說明租賃合約事實
+3. 說明違約情事（請保留空白讓使用者填寫具體違約事項）
+4. 要求限期改善或清償
+5. 說明未依限改善將採取法律行動（包括但不限於終止合約、請求損害賠償等）
+6. 正式結尾
+
+請使用正式法律文書用語，但保持清晰易懂。不需要加入日期和郵局格式資訊，只需要信函主體內容。
+在違約事項的部分，請用「【請填寫具體違約事項】」作為佔位符，讓使用者可以自行編輯。"""
 
     try:
         headers = {
@@ -316,34 +354,30 @@ async def legal_generate_content(
 
 
 async def legal_create_letter(
-    payment_id: int,
     content: str,
+    payment_id: int = None,
+    contract_id: int = None,
     recipient_name: str = None,
     recipient_address: str = None
 ) -> Dict[str, Any]:
     """
     建立存證信函記錄
 
+    支援兩種模式：
+    1. 從逾期付款建立（提供 payment_id）
+    2. 從合約手動建立（提供 contract_id）
+
     Args:
-        payment_id: 付款ID
         content: 存證信函內容
-        recipient_name: 收件人姓名（可選，自動從付款資料取得）
+        payment_id: 付款ID（模式1）
+        contract_id: 合約ID（模式2）
+        recipient_name: 收件人姓名（可選）
         recipient_address: 收件人地址（可選）
 
     Returns:
         新建的存證信函記錄
     """
     try:
-        # 取得付款相關資料
-        candidates = await postgrest_get("v_legal_letter_candidates", {
-            "payment_id": f"eq.{payment_id}"
-        })
-
-        if not candidates:
-            return {"success": False, "message": "找不到符合條件的付款記錄"}
-
-        candidate = candidates[0]
-
         # 生成編號
         today_str = date.today().strftime("%Y%m%d")
         letters = await postgrest_get("legal_letters", {
@@ -360,21 +394,60 @@ async def legal_create_letter(
 
         letter_number = f"LL{today_str}-{str(seq_num).zfill(3)}"
 
-        # 準備資料
-        data = {
-            "payment_id": payment_id,
-            "customer_id": candidate["customer_id"],
-            "contract_id": candidate["contract_id"],
-            "branch_id": candidate["branch_id"],
-            "letter_number": letter_number,
-            "recipient_name": recipient_name or candidate.get("company_name") or candidate.get("customer_name"),
-            "recipient_address": recipient_address or candidate.get("legal_address") or "",
-            "content": content,
-            "overdue_amount": candidate.get("overdue_amount", 0),
-            "overdue_days": candidate.get("days_overdue", 0),
-            "reminder_count": candidate.get("reminder_count", 0),
-            "status": "draft"
-        }
+        if payment_id:
+            # 模式 1：從逾期付款建立
+            candidates = await postgrest_get("v_legal_letter_candidates", {
+                "payment_id": f"eq.{payment_id}"
+            })
+
+            if not candidates:
+                return {"success": False, "message": "找不到符合條件的付款記錄"}
+
+            candidate = candidates[0]
+
+            data = {
+                "payment_id": payment_id,
+                "customer_id": candidate["customer_id"],
+                "contract_id": candidate["contract_id"],
+                "branch_id": candidate["branch_id"],
+                "letter_number": letter_number,
+                "recipient_name": recipient_name or candidate.get("company_name") or candidate.get("customer_name"),
+                "recipient_address": recipient_address or candidate.get("legal_address") or "",
+                "content": content,
+                "overdue_amount": candidate.get("overdue_amount", 0),
+                "overdue_days": candidate.get("days_overdue", 0),
+                "reminder_count": candidate.get("reminder_count", 0),
+                "status": "draft"
+            }
+        elif contract_id:
+            # 模式 2：從合約手動建立
+            contracts = await postgrest_get("contracts", {
+                "id": f"eq.{contract_id}",
+                "select": "*,customers(id,name,company_name),branches(id,name)"
+            })
+
+            if not contracts:
+                return {"success": False, "message": "找不到合約"}
+
+            contract = contracts[0]
+            customer = contract.get("customers", {})
+
+            data = {
+                "contract_id": contract_id,
+                "customer_id": customer.get("id"),
+                "branch_id": contract.get("branch_id"),
+                "letter_number": letter_number,
+                "recipient_name": recipient_name or customer.get("company_name") or customer.get("name"),
+                "recipient_address": recipient_address or contract.get("registered_address") or "",
+                "content": content,
+                "overdue_amount": 0,
+                "overdue_days": 0,
+                "reminder_count": 0,
+                "status": "draft",
+                "notes": "手動從合約建立"
+            }
+        else:
+            return {"success": False, "message": "請提供 payment_id 或 contract_id"}
 
         result = await postgrest_post("legal_letters", data)
         letter = result[0] if isinstance(result, list) else result
