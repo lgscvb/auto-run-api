@@ -240,7 +240,8 @@ from tools.notification_tools import (
 from tools.brain_tools import (
     brain_save_knowledge,
     brain_search_knowledge,
-    brain_list_categories
+    brain_list_categories,
+    brain_save_customer_traits
 )
 
 from tools.calendar_tools import (
@@ -258,6 +259,12 @@ from tools.service_plan_tools import (
     delete_service_plan,
     reorder_service_plans,
     sync_prices_to_brain
+)
+
+from tools.feedback_tools import (
+    feedback_submit,
+    feedback_list,
+    set_postgrest_request as set_feedback_postgrest
 )
 
 
@@ -937,6 +944,47 @@ MCP_TOOLS = {
         "parameters": {},
         "handler": brain_list_categories
     },
+    "brain_save_customer_traits": {
+        "description": "儲存客戶特性到 Brain RAG 知識庫，讓 AI 客服在對話時能參考客戶的特點進行個性化應對。",
+        "parameters": {
+            "customer_name": {"type": "string", "description": "客戶姓名", "required": True},
+            "company_name": {"type": "string", "description": "公司名稱", "optional": True},
+            "line_user_id": {"type": "string", "description": "LINE User ID（用於 Brain 識別客戶）", "optional": True},
+            "tags": {
+                "type": "array",
+                "description": "特性標籤：payment_risk=易拖欠, far_location=住很遠, cooperative=配合度高, strict=一板一眼, cautious=需謹慎應對, vip=VIP客戶, referral=轉介來源",
+                "optional": True
+            },
+            "notes": {"type": "string", "description": "額外備註說明", "optional": True}
+        },
+        "handler": brain_save_customer_traits
+    },
+
+    # 回報問題/建議工具
+    "feedback_submit": {
+        "description": "提交問題回報或功能建議。當用戶反映系統問題、提出改進建議或新功能需求時使用。",
+        "parameters": {
+            "feedback_type": {
+                "type": "string",
+                "description": "類型：bug=系統錯誤, feature=新功能需求, improvement=改進建議, question=使用問題, other=其他",
+                "required": True
+            },
+            "title": {"type": "string", "description": "標題（簡短描述）", "required": True},
+            "description": {"type": "string", "description": "詳細說明", "optional": True},
+            "priority": {"type": "string", "description": "優先級：low/medium/high/critical", "default": "medium"},
+            "related_feature": {"type": "string", "description": "相關功能（如：繳費管理、報表）", "optional": True}
+        },
+        "handler": feedback_submit
+    },
+    "feedback_list": {
+        "description": "列出已提交的問題回報（供管理員查看）",
+        "parameters": {
+            "status": {"type": "string", "description": "篩選狀態：open/reviewing/in_progress/resolved", "optional": True},
+            "feedback_type": {"type": "string", "description": "篩選類型", "optional": True},
+            "limit": {"type": "integer", "description": "回傳數量上限", "default": 20}
+        },
+        "handler": feedback_list
+    },
 
     # Calendar 工具
     "calendar_create": {
@@ -1105,6 +1153,10 @@ async def lifespan(app: FastAPI):
     # 設置通知工具的 postgrest_request
     set_notification_postgrest(postgrest_request)
     logger.info("Notification tools initialized")
+
+    # 設置回報工具的 postgrest_request
+    set_feedback_postgrest(postgrest_request)
+    logger.info("Feedback tools initialized")
 
     # 啟動排程器
     scheduler.add_job(send_booking_reminders, 'interval', minutes=10)
@@ -1879,6 +1931,40 @@ CRM_SYSTEM_PROMPT = """你是 Hour Jungle CRM 的智能助手，專門協助員�
 5. 發送 LINE 訊息給客戶（繳費提醒、續約提醒）
 6. 建立新客戶、更新客戶資料、記錄繳費
 7. 佣金付款、撤銷繳費記錄
+8. 儲存有價值的知識到 AI 知識庫
+
+📚 知識儲存功能
+當對話中發現以下有價值的資訊時，你應該主動詢問用戶是否要儲存到知識庫：
+- 法規規定（如：資本額 25 萬以下免資本證明）
+- 流程說明（如：公司登記需要哪些文件）
+- 價格資訊（如：某服務的收費標準）
+- 常見問題的答案
+- 異議處理方式（如：如何應對「太貴」的反應）
+- 客戶特性資訊
+
+詢問格式：
+💡 我注意到這個資訊可能對未來的客服對話有幫助：
+「[資訊摘要]」
+是否要將這個知識儲存到 AI 知識庫？
+
+如果用戶同意，使用 brain_save_knowledge 工具儲存，並根據內容選擇適當的分類：
+- faq: 常見問題
+- service_info: 服務資訊（價格、地址、營業時間）
+- process: 流程說明
+- regulation: 法規規定
+- objection: 異議處理
+- value_prop: 價值主張
+- tactics: 銷售技巧
+- customer_info: 客戶資訊
+
+🐛 回報問題/建議功能
+當用戶反映系統問題或提出建議時，使用 feedback_submit 工具記錄：
+- 系統 Bug：「某功能壞了」「資料顯示錯誤」→ feedback_type: bug
+- 新功能需求：「希望可以...」「能不能新增...」→ feedback_type: feature
+- 改進建議：「這個功能用起來不方便」→ feedback_type: improvement
+- 使用問題：「這個怎麼用」「找不到某功能」→ feedback_type: question
+
+回報後告知用戶：「已收到您的回報，開發團隊會盡快處理！」
 
 使用說明：
 - 當用戶詢問客戶資料時，使用 crm_search_customers 或 crm_get_customer_detail

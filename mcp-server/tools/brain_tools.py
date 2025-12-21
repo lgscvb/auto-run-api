@@ -211,3 +211,120 @@ async def brain_list_categories() -> Dict[str, Any]:
             for k, v in KNOWLEDGE_CATEGORIES.items()
         ]
     }
+
+
+# 預設客戶特性標籤
+CUSTOMER_TAGS = {
+    "payment_risk": "易拖欠款項",
+    "far_location": "住很遠不便",
+    "cooperative": "配合度高",
+    "strict": "一板一眼",
+    "cautious": "需謹慎應對",
+    "vip": "VIP 客戶",
+    "referral": "轉介來源"
+}
+
+
+async def brain_save_customer_traits(
+    customer_name: str,
+    company_name: Optional[str] = None,
+    line_user_id: Optional[str] = None,
+    tags: List[str] = None,
+    notes: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    儲存客戶特性到 Brain RAG 知識庫
+
+    當 CRM 用戶標記客戶特性時，將這些資訊同步到 Brain，
+    讓 AI 客服在對話時能參考客戶的特點。
+
+    Args:
+        customer_name: 客戶姓名（必填）
+        company_name: 公司名稱（可選）
+        line_user_id: LINE User ID（可選，用於 Brain 識別客戶）
+        tags: 特性標籤列表，可選值：
+              - payment_risk: 易拖欠款項
+              - far_location: 住很遠不便
+              - cooperative: 配合度高
+              - strict: 一板一眼
+              - cautious: 需謹慎應對
+              - vip: VIP 客戶
+              - referral: 轉介來源
+        notes: 額外備註（可選）
+
+    Returns:
+        執行結果
+    """
+    if not customer_name:
+        return {
+            "success": False,
+            "message": "請提供客戶姓名"
+        }
+
+    # 組合知識內容
+    content_parts = [f"客戶「{customer_name}」"]
+
+    if company_name:
+        content_parts[0] += f"（{company_name}）"
+
+    content_parts.append("的特性：")
+
+    # 處理標籤
+    if tags:
+        tag_labels = [CUSTOMER_TAGS.get(t, t) for t in tags]
+        content_parts.append("、".join(tag_labels))
+
+    # 處理備註
+    if notes:
+        content_parts.append(f"。補充說明：{notes}")
+
+    content = "".join(content_parts)
+
+    # 準備 metadata
+    metadata = {
+        "source": "crm_customer_traits",
+        "customer_name": customer_name
+    }
+    if company_name:
+        metadata["company_name"] = company_name
+    if line_user_id:
+        metadata["line_user_id"] = line_user_id
+    if tags:
+        metadata["tags"] = tags
+
+    # 呼叫 Brain API
+    payload = {
+        "content": content,
+        "category": "customer_info",
+        "sub_category": "traits",
+        "metadata": metadata
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{BRAIN_API_URL}/api/knowledge",
+                json=payload,
+                timeout=30.0
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "message": f"已將 {customer_name} 的客戶特性同步到 AI 客服",
+                    "knowledge_id": result.get("id"),
+                    "content": content
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Brain API 錯誤: {response.status_code}"
+                }
+
+    except Exception as e:
+        logger.error(f"brain_save_customer_traits error: {e}")
+        return {
+            "success": False,
+            "message": f"同步失敗: {str(e)}"
+        }
