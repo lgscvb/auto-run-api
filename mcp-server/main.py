@@ -952,7 +952,7 @@ MCP_TOOLS = {
             "line_user_id": {"type": "string", "description": "LINE User ID（用於 Brain 識別客戶）", "optional": True},
             "tags": {
                 "type": "array",
-                "description": "特性標籤：payment_risk=易拖欠, far_location=住很遠, cooperative=配合度高, strict=一板一眼, cautious=需謹慎應對, vip=VIP客戶, referral=轉介來源",
+                "description": "特性標籤。預設值：payment_risk, far_location, cooperative, strict, cautious, vip, referral。也支援自訂標籤如「喜歡用現金」「需要收據」「習慣遲到」等任意文字",
                 "optional": True
             },
             "notes": {"type": "string", "description": "額外備註說明", "optional": True}
@@ -1940,7 +1940,9 @@ CRM_SYSTEM_PROMPT = """你是 Hour Jungle CRM 的智能助手，專門協助員�
 - 價格資訊（如：某服務的收費標準）
 - 常見問題的答案
 - 異議處理方式（如：如何應對「太貴」的反應）
-- 客戶特性資訊
+- 客戶特性資訊（使用 brain_save_customer_traits 工具）
+  預設標籤：payment_risk, far_location, cooperative, strict, cautious, vip, referral
+  也可使用自訂標籤如「喜歡用現金」「需要收據」「習慣遲到」等任意文字
 
 詢問格式：
 💡 我注意到這個資訊可能對未來的客服對話有幫助：
