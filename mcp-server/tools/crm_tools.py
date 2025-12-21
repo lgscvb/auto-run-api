@@ -4,6 +4,8 @@ Hour Jungle CRM - CRM Tools
 """
 
 import logging
+import calendar
+import re
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 
@@ -606,6 +608,75 @@ async def payment_undo(
         raise Exception(f"撤銷繳費失敗: {e}")
 
 
+# ============================================================================
+# 合約編號產生器
+# ============================================================================
+
+async def generate_contract_number(branch_id: int) -> str:
+    """
+    根據分館產生下一個合約編號
+
+    Args:
+        branch_id: 分館 ID
+            - 1: 大忠館 → DZ-XXX（3位數）
+            - 2: 環瑞館 → HR-VXX（2位數）
+
+    Returns:
+        新的合約編號
+    """
+    if branch_id == 1:
+        # 大忠館：DZ-XXX 格式
+        contracts = await postgrest_get(
+            "contracts",
+            {
+                "select": "contract_number",
+                "contract_number": "like.DZ-%",
+                "limit": "2000"
+            }
+        )
+
+        max_num = 0
+        for c in contracts:
+            cn = c.get("contract_number", "")
+            # 匹配 DZ-XXX 格式（可能有 -E 後綴表示已結束）
+            match = re.match(r"DZ-E?(\d+)", cn)
+            if match:
+                num = int(match.group(1))
+                if num > max_num:
+                    max_num = num
+
+        next_num = max_num + 1
+        return f"DZ-{next_num:03d}"
+
+    elif branch_id == 2:
+        # 環瑞館：HR-VXX 格式
+        contracts = await postgrest_get(
+            "contracts",
+            {
+                "select": "contract_number",
+                "contract_number": "like.HR-V%",
+                "order": "contract_number.desc",
+                "limit": "50"
+            }
+        )
+
+        max_num = 0
+        for c in contracts:
+            cn = c.get("contract_number", "")
+            match = re.match(r"HR-V(\d+)", cn)
+            if match:
+                num = int(match.group(1))
+                if num > max_num:
+                    max_num = num
+
+        next_num = max_num + 1
+        return f"HR-V{next_num:02d}"
+
+    else:
+        # 未知分館，使用通用格式
+        return f"HJ-{datetime.now().strftime('%Y%m%d')}-{branch_id}"
+
+
 async def create_contract(
     branch_id: int,
     start_date: str,
@@ -662,16 +733,21 @@ async def create_contract(
     Returns:
         新建合約資料
     """
+    # 生成合約編號（根據分館使用正確格式）
+    contract_number = await generate_contract_number(branch_id)
+    logger.info(f"Generated contract number: {contract_number} for branch {branch_id}")
+
     data = {
+        "contract_number": contract_number,
         "branch_id": branch_id,
         "start_date": start_date,
         "end_date": end_date,
         "monthly_rent": monthly_rent,
         "contract_type": contract_type,
-        "deposit_amount": deposit_amount,
+        "deposit": deposit_amount,  # 資料庫欄位是 deposit 不是 deposit_amount
         "payment_cycle": payment_cycle,
         "payment_day": payment_day,
-        "status": "draft"
+        "status": "active"  # 直接建立的合約狀態為 active
     }
 
     # 承租人資訊
@@ -736,15 +812,68 @@ async def create_contract(
             except Exception as pos_err:
                 logger.warning(f"自動分配位置失敗（不影響合約建立）: {pos_err}")
 
-        message = f"合約 {contract.get('contract_number', contract['id'])} 建立成功"
+        # 建立繳費記錄
+        payments_created = []
+        try:
+            # 計算第一期繳費日期和期間
+            start_dt = datetime.fromisoformat(start_date)
+            first_payment_period = start_dt.strftime("%Y-%m")
+
+            # 計算 due_date：使用 payment_day，若超過該月最後一天則用月底
+            last_day_of_month = calendar.monthrange(start_dt.year, start_dt.month)[1]
+            actual_payment_day = min(payment_day, last_day_of_month)
+            first_due_date = date(start_dt.year, start_dt.month, actual_payment_day).isoformat()
+
+            # 押金記錄（如果有押金）
+            if deposit_amount and deposit_amount > 0:
+                deposit_payment = {
+                    "contract_id": contract["id"],
+                    "customer_id": contract.get("customer_id"),
+                    "branch_id": branch_id,
+                    "payment_type": "deposit",
+                    "payment_period": first_payment_period,
+                    "amount": deposit_amount,
+                    "due_date": first_due_date,
+                    "payment_status": "pending"
+                }
+                await postgrest_post("payments", deposit_payment)
+                payments_created.append("押金")
+                logger.info(f"Created deposit payment for contract {contract['id']}")
+
+            # 第一期租金記錄
+            if monthly_rent and monthly_rent > 0:
+                first_rent_payment = {
+                    "contract_id": contract["id"],
+                    "customer_id": contract.get("customer_id"),
+                    "branch_id": branch_id,
+                    "payment_type": "rent",
+                    "payment_period": first_payment_period,
+                    "amount": monthly_rent,
+                    "due_date": first_due_date,
+                    "payment_status": "pending"
+                }
+                await postgrest_post("payments", first_rent_payment)
+                payments_created.append("第一期租金")
+                logger.info(f"Created first rent payment for contract {contract['id']}")
+
+        except Exception as pay_err:
+            logger.warning(f"繳費記錄建立失敗（不影響合約建立）: {pay_err}")
+
+        # 組合訊息
+        message = f"合約 {contract.get('contract_number')} 建立成功"
         if position_assigned:
             message += f"，已自動分配位置 {position_assigned}"
+        if payments_created:
+            message += f"，已建立繳費記錄：{', '.join(payments_created)}"
 
         return {
             "success": True,
             "message": message,
             "contract": contract,
-            "position_assigned": position_assigned
+            "contract_id": contract["id"],
+            "contract_number": contract.get("contract_number"),
+            "position_assigned": position_assigned,
+            "payments_created": payments_created
         }
     except Exception as e:
         logger.error(f"create_contract error: {e}")
