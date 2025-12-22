@@ -34,7 +34,7 @@ app.add_middleware(
 
 # GCS 設定
 GCS_BUCKET = os.getenv("GCS_BUCKET", "hourjungle-contracts")
-SIGNED_URL_EXPIRATION = 3600  # 1小時
+SIGNED_URL_EXPIRATION = 604800  # 7天
 
 # 取得服務帳戶認證（用於 IAM signing）
 def get_service_account_email():
