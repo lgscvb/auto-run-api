@@ -93,7 +93,7 @@ async def floor_plan_get_positions(
             "floor_plan": {
                 "id": plan["id"],
                 "name": plan["name"],
-                "image_url": f"{FLOOR_PLAN_IMAGE_BASE}/{plan['image_filename']}" if plan.get("image_filename") else None,
+                "image_url": plan.get("image_url") or (f"{FLOOR_PLAN_IMAGE_BASE}/{plan['image_filename']}" if plan.get("image_filename") else None),
                 "width": plan["width"],
                 "height": plan["height"]
             },
